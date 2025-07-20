@@ -1,64 +1,101 @@
-# grblHAL Firmware for BTT SKR Mini E3 v3.0
+# STM32G0xx grblHAL Firmware Binaries
 
-This directory contains pre-compiled firmware binaries for the BTT SKR Mini E3 v3.0 board with STM32G0B1 processor.
+This folder contains precompiled firmware binaries for the BTT SKR Mini E3 v3.0 board (STM32G0B1RET6).
 
-## Firmware Variants
+## Firmware Versions
 
-### BTT_SKR_MINI_E3_V30_uart.bin
-- **Communication**: UART (traditional serial via TMC2209 pins)
-- **Use case**: Connect via UART adapter or TMC2209 UART pins
-- **Features**: All core grblHAL features, VFD spindle control, TMC2209 support
+### `BTT_SKR_MINI_E3_V30_UART.bin`
+- **Communication**: UART over USB (PA9/PA10)
+- **Usage**: Standard USB-to-serial communication via onboard CH340 chip
+- **Best for**: Most CNC applications and compatibility with existing host software
 
-### BTT_SKR_MINI_E3_V30_usb.bin  
-- **Communication**: USB CDC (direct USB connection)
-- **Use case**: Direct USB connection to PC
-- **Features**: All core grblHAL features, VFD spindle control, TMC2209 support
-- **Note**: USB implementation uses placeholder middleware - full USB functionality requires complete STM32 USB middleware
+### `BTT_SKR_MINI_E3_V30_USB.bin`  
+- **Communication**: Native USB CDC (USB Device mode)
+- **Usage**: Direct USB communication without CH340 chip
+- **Best for**: Higher performance, lower latency communication
+
+## Features Included
+
+Both firmware versions include:
+
+✅ **Core grblHAL Features**:
+- 3-axis stepper motor control
+- Real-time G-code interpretation
+- Spindle PWM control (VFD support)
+- Limit switch inputs
+- Probe input support
+- Safety door and hold functions
+
+✅ **Hardware Support**:
+- STM32G0B1RET6 (64MHz, 512KB Flash, 144KB RAM)
+- TMC2209 UART stepper drivers
+- GPIO operations optimized for Cortex-M0+
+- Efficient step pulse generation
+
+✅ **Communication**:
+- Serial/USB communication
+- TMC2209 UART control
+- I2C accessory support
+
+✅ **I2C Accessories** (PB8/PB9 - EXP1 header):
+- EEPROM modules for settings storage
+- I2C keypads for manual control
+- OLED displays (128x64 SSD1306, etc.)
+- I2C sensors (temperature, current, etc.)
+- TMC stepper drivers via I2C bridge
+
+✅ **Advanced Features**:
+- VFD spindle control with PWM
+- 64MHz system clock (internal oscillator)
+- USB CDC implementation
+- Complete HAL abstraction layer
 
 ## Installation Instructions
 
-1. Copy the desired `firmware.bin` file to the root directory of your SD card
-2. Rename it to `firmware.bin` (remove the prefix)
-3. Insert the SD card into your BTT SKR Mini E3 v3.0
-4. Power cycle the board
-5. The bootloader will automatically flash the firmware and rename the file to `firmware.cur`
+1. **Power off** the BTT SKR Mini E3 v3.0 board
+2. **Insert SD card** into your computer
+3. **Copy firmware** file to SD card root directory:
+   - For UART: Copy `BTT_SKR_MINI_E3_V30_UART.bin` as `firmware.bin`
+   - For USB: Copy `BTT_SKR_MINI_E3_V30_USB.bin` as `firmware.bin`
+4. **Insert SD card** into BTT SKR Mini E3 v3.0
+5. **Power on** the board (firmware will auto-update from SD card)
+6. **Remove SD card** after successful update
 
-## Board Features Supported
+## Communication Setup
 
-- ✅ **Stepper Control**: X, Y, Z axes with TMC2209 drivers
-- ✅ **Limits**: X, Y, Z limit switches on PC0, PC1, PC2
-- ✅ **VFD Spindle**: PWM control on PA1 (TIM2_CH2) for 0-10V VFD interface
-- ✅ **TMC2209 UART**: Stepper driver configuration via UART
-- ✅ **grblHAL Integration**: Full grblHAL feature set
-- ✅ **Memory Optimized**: Only 0.8% RAM, 0.3% Flash usage
+### UART Version (Recommended)
+- **Baud Rate**: 115200
+- **Connection**: USB cable to board's USB port
+- **Driver**: CH340 USB-to-serial driver required
+- **Port**: Appears as COM port (Windows) or /dev/ttyUSB (Linux)
+
+### USB Version (Advanced)
+- **Connection**: USB cable to board's USB port  
+- **Driver**: Native USB CDC (no additional drivers needed)
+- **Port**: Appears as virtual COM port
+- **Latency**: Lower latency than UART version
 
 ## Build Information
 
-- **Target**: STM32G0B1RET6 (Cortex-M0+, 64MHz)
-- **Memory**: 512KB Flash, 144KB RAM  
-- **Bootloader Offset**: 0x8000 (32KB)
-- **Build Tool**: PlatformIO
-- **Framework**: STM32Cube HAL
+- **Platform**: STM32G0xx
+- **Toolchain**: GCC ARM None EABI 7.2.1
+- **grblHAL Version**: Latest with STM32G0xx support
+- **Memory Usage**: 
+  - Flash: ~1.5KB (0.3% of 512KB)
+  - RAM: ~1.1KB (0.8% of 144KB)
 
-## Pin Configuration
+## Version History
 
-See `boards/btt_skr_mini_e3_3.0_map.h` for complete pin mappings.
+- **Latest**: Complete I2C support, VFD spindle control, USB CDC
+- **Previous**: GPIO bitband fixes, TMC2209 UART support
+- **Initial**: Basic STM32G0xx driver implementation
 
-Key pins:
-- **Spindle PWM**: PA1 (TIM2_CH2)
-- **Spindle Enable**: PC14
-- **Limits**: PC0 (X), PC1 (Y), PC2 (Z)
-- **TMC2209 UART**: PA2/PA3 (USART2)
+## Support
 
-## Development
+For issues or questions:
+- Check grblHAL documentation
+- Review STM32G0xx driver implementation
+- Test with hardware before deployment
 
-To rebuild firmware:
-```bash
-# UART version
-pio run -e BTT_SKR_MINI_E3_V30
-
-# USB version  
-pio run -e BTT_SKR_MINI_E3_V30_USB
-```
-
-Binaries will be generated in `.pio/build/<env_name>/firmware.bin`
+**Note**: These binaries are built for the BTT SKR Mini E3 v3.0 specifically. Do not use on other boards without verification.
+EOF < /dev/null
