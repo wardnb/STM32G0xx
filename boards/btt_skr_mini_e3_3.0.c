@@ -161,6 +161,12 @@ void board_init (void)
     // Start timer
     TIM2->CR1 |= TIM_CR1_CEN;
 #endif
+
+#ifdef I2C_PORT
+    // Initialize I2C for accessories (EEPROM, keypad, etc.)
+    // GPIO configuration and peripheral setup handled in i2c_start()
+    // when I2C functionality is first used
+#endif
 }
 
 #endif

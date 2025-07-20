@@ -63,7 +63,7 @@ static uint_fast16_t bitsClearAtomic (volatile uint_fast16_t *ptr, uint_fast16_t
 static uint_fast16_t valueSetAtomic (volatile uint_fast16_t *ptr, uint_fast16_t value);
 
 #ifdef I2C_PORT
-// #include "i2c.h"  // TODO: Create i2c.h when I2C functionality is needed
+#include "i2c.h"
 #endif
 
 #if SDCARD_ENABLE

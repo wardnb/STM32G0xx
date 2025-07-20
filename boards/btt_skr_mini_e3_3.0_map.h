@@ -190,6 +190,12 @@
 #define PROBE_PIN               AUXINPUT2_PIN
 #endif
 
+// I2C configuration - I2C1 on PB8/PB9 (EXP1 header pins)
+#define I2C1_SCL_PORT           GPIOB
+#define I2C1_SCL_PIN            8       // PB8 - I2C1_SCL (EXP1-3)
+#define I2C1_SDA_PORT           GPIOB  
+#define I2C1_SDA_PIN            9       // PB9 - I2C1_SDA (EXP1-4)
+
 #if I2C_STROBE_ENABLE
 #define I2C_STROBE_PORT         AUXINPUT1_PORT
 #define I2C_STROBE_PIN          AUXINPUT1_PIN
