@@ -1,25 +1,13 @@
 /**
   ******************************************************************************
   * @file    stm32g0xx_hal.h
-  * @author  MCD Application Team
   * @brief   This file contains all the functions prototypes for the HAL 
   *          module driver.
   ******************************************************************************
-  * @attention
-  *
-  * Copyright (c) 2018 STMicroelectronics.
-  * All rights reserved.
-  *
-  * This software is licensed under terms that can be found in the LICENSE file
-  * in the root directory of this software component.
-  * If no LICENSE file comes with this software, it is provided AS-IS.
-  *
-  ******************************************************************************
   */
 
-/* Define to prevent recursive inclusion -------------------------------------*/
-#ifndef STM32G0xx_HAL_H
-#define STM32G0xx_HAL_H
+#ifndef __STM32G0xx_HAL_H
+#define __STM32G0xx_HAL_H
 
 #ifdef __cplusplus
  extern "C" {
@@ -28,24 +16,36 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32g0xx_hal_conf.h"
 
-/** @addtogroup STM32G0xx_HAL_Driver
-  * @{
-  */
+/* Standard includes */
+#include <stddef.h>
+#include <stdint.h>
 
-/** @addtogroup HAL
-  * @{
-  */
+/* HAL module includes */
+#ifdef HAL_GPIO_MODULE_ENABLED
+  #include "stm32g0xx_hal_gpio.h"
+#endif /* HAL_GPIO_MODULE_ENABLED */
+
+#ifdef HAL_RCC_MODULE_ENABLED
+  #include "stm32g0xx_hal_rcc.h"
+#endif /* HAL_RCC_MODULE_ENABLED */
+
+#ifdef HAL_TIM_MODULE_ENABLED
+  #include "stm32g0xx_hal_tim.h"
+#endif /* HAL_TIM_MODULE_ENABLED */
+
+#ifdef HAL_UART_MODULE_ENABLED
+  #include "stm32g0xx_hal_uart.h"
+#endif /* HAL_UART_MODULE_ENABLED */
 
 /* Exported types ------------------------------------------------------------*/
-/* Exported constants --------------------------------------------------------*/
+typedef enum 
+{
+  HAL_OK       = 0x00U,
+  HAL_ERROR    = 0x01U,
+  HAL_BUSY     = 0x02U,
+  HAL_TIMEOUT  = 0x03U
+} HAL_StatusTypeDef;
 
-/** @defgroup HAL_Exported_Constants HAL Exported Constants
-  * @{
-  */
-
-/** @defgroup HAL_TICK_FREQ Tick Frequency
-  * @{
-  */
 typedef enum
 {
   HAL_TICK_FREQ_10HZ         = 100U,
@@ -54,54 +54,60 @@ typedef enum
   HAL_TICK_FREQ_DEFAULT      = HAL_TICK_FREQ_1KHZ
 } HAL_TickFreqTypeDef;
 
-/**
-  * @}
-  */
+typedef enum
+{
+  HAL_UNLOCKED = 0x00U,
+  HAL_LOCKED   = 0x01U
+} HAL_LockTypeDef;
 
-/* Exported macro ------------------------------------------------------------*/
+/* Exported constants --------------------------------------------------------*/
+#define HAL_MAX_DELAY      0xFFFFFFFFU
+#define HAL_TIMEOUT_VALUE  5000U
+#define HSI_TIMEOUT_VALUE  2U       /* 2 ms (minimum Tick + 1) */
+#define HSE_TIMEOUT_VALUE  100U     /* 100 ms */
+#define PLL_TIMEOUT_VALUE  2U       /* 2 ms (minimum Tick + 1) */
+#define CLOCKSWITCH_TIMEOUT_VALUE  5000U  /* 5 s    */
 
-/** @defgroup HAL_Exported_Macros HAL Exported Macros
-  * @{
-  */
+/* Tick frequency */
+extern uint32_t uwTickFreq;
+extern uint32_t uwTickPrio;
 
-/** @brief  Freeze/Unfreeze Peripherals in Debug mode 
-  */
-#define __HAL_DBGMCU_FREEZE_TIM2()           (DBGMCU->APBFZ1 |= (DBGMCU_APBFZ1_DBG_TIM2_STOP))
-#define __HAL_DBGMCU_FREEZE_TIM3()           (DBGMCU->APBFZ1 |= (DBGMCU_APBFZ1_DBG_TIM3_STOP))
+/* SysTick counter */
+extern __IO uint32_t uwTick;
 
-#define __HAL_DBGMCU_UNFREEZE_TIM2()         (DBGMCU->APBFZ1 &= ~(DBGMCU_APBFZ1_DBG_TIM2_STOP))
-#define __HAL_DBGMCU_UNFREEZE_TIM3()         (DBGMCU->APBFZ1 &= ~(DBGMCU_APBFZ1_DBG_TIM3_STOP))
+/* Core clock frequency */
+extern uint32_t SystemCoreClock;
 
-/**
-  * @}
-  */
+/* Exported macros -----------------------------------------------------------*/
+#define UNUSED(x) ((void)(x))
+#define __IO volatile
+#define __IM volatile const
+#define __OM volatile
+
+/* Lock and unlock macros */
+#define __HAL_LOCK(__HANDLE__)                                           \
+                                do{                                        \
+                                    if((__HANDLE__)->Lock == HAL_LOCKED)   \
+                                    {                                      \
+                                       return HAL_BUSY;                    \
+                                    }                                      \
+                                    else                                   \
+                                    {                                      \
+                                       (__HANDLE__)->Lock = HAL_LOCKED;     \
+                                    }                                      \
+                                  }while (0U)
+
+#define __HAL_UNLOCK(__HANDLE__)                                          \
+                                  do{                                       \
+                                      (__HANDLE__)->Lock = HAL_UNLOCKED;    \
+                                    }while (0U)
 
 /* Exported functions --------------------------------------------------------*/
-
-/** @addtogroup HAL_Exported_Functions
-  * @{
-  */
-
-/** @addtogroup HAL_Exported_Functions_Group1
-  * @{
-  */
-
-/* Initialization and de-initialization functions  ****************************/
 HAL_StatusTypeDef HAL_Init(void);
 HAL_StatusTypeDef HAL_DeInit(void);
 void HAL_MspInit(void);
 void HAL_MspDeInit(void);
 HAL_StatusTypeDef HAL_InitTick(uint32_t TickPriority);
-
-/**
-  * @}
-  */
-
-/** @addtogroup HAL_Exported_Functions_Group2
-  * @{
-  */
-
-/* Peripheral Control functions  ***********************************************/
 void HAL_IncTick(void);
 void HAL_Delay(uint32_t Delay);
 uint32_t HAL_GetTick(void);
@@ -110,31 +116,11 @@ HAL_StatusTypeDef HAL_SetTickFreq(HAL_TickFreqTypeDef Freq);
 HAL_TickFreqTypeDef HAL_GetTickFreq(void);
 void HAL_SuspendTick(void);
 void HAL_ResumeTick(void);
-uint32_t HAL_GetHalVersion(void);
-uint32_t HAL_GetREVID(void);
-uint32_t HAL_GetDEVID(void);
-uint32_t HAL_GetUIDw0(void);
-uint32_t HAL_GetUIDw1(void);
-uint32_t HAL_GetUIDw2(void);
-
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
-
-/**
-  * @}
-  */
+uint32_t HAL_SYSTICK_Config(uint32_t TicksNumb);
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* STM32G0xx_HAL_H */
+#endif /* __STM32G0xx_HAL_H */
+EOF < /dev/null
