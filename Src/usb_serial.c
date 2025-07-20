@@ -24,17 +24,25 @@
 #include "usb_serial.h"
 #include "grbl/protocol.h"
 
-// Minimal USB placeholder definitions for compilation
-// Full USB implementation would require complete STM32 USB middleware
+#if USB_SERIAL_CDC
+#include "usb_device.h"
+#include "usbd_cdc_if.h"
+#endif
+
+#if USB_SERIAL_CDC
+// Use actual USB middleware definitions
+#else
+// Minimal USB placeholder definitions for compilation when USB is disabled
 typedef enum {
     USBD_OK = 0,
     USBD_BUSY = 1,
     USBD_FAIL = 2
 } USBD_StatusTypeDef;
 
-// USB function prototypes
+// USB function prototypes for placeholder mode
 void MX_USB_DEVICE_Init(void);
 USBD_StatusTypeDef CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
+#endif
 
 #define USB_SER_RX_BUFFER_SIZE 256
 
@@ -231,18 +239,22 @@ const io_stream_t *usbInit (void)
     rxbuf.head = rxbuf.tail = 0;
     rxbuf.overflow = Off;
 
-    // TODO: Initialize USB peripheral when middleware is complete
-    // MX_USB_DEVICE_Init();
+#if USB_SERIAL_CDC
+    // Initialize USB device with actual implementation
+    MX_USB_DEVICE_Init();
+#endif
 
     return &usb_stream;
 }
 
-// Placeholder implementations for compilation
+#if !USB_SERIAL_CDC
+// Placeholder implementations for compilation when USB is disabled
 void MX_USB_DEVICE_Init(void) {
-    // TODO: Initialize USB device when middleware is complete
+    // Placeholder - USB not enabled
 }
 
 USBD_StatusTypeDef CDC_Transmit_FS(uint8_t* Buf, uint16_t Len) {
-    // TODO: Transmit data via USB CDC when middleware is complete
+    // Placeholder - USB not enabled
     return USBD_OK;
 }
+#endif

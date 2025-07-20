@@ -25,40 +25,30 @@
 #include "usbd_core.h"
 #include "usbd_cdc.h"
 
-PCD_HandleTypeDef hpcd_USB_DRD_FS;
+PCD_HandleTypeDef hpcd_USB_FS;
 
 void HAL_PCD_MspInit(PCD_HandleTypeDef* pcdHandle)
 {
-  RCC_PeriphCLKInitTypeDef PeriphClkInit = {0};
-  if(pcdHandle->Instance==USB_DRD_FS)
+  if(pcdHandle->Instance==USB)
   {
-    /** Initializes the peripherals clocks
-    */
-    PeriphClkInit.PeriphClockSelection = RCC_PERIPHCLK_USB;
-    PeriphClkInit.UsbClockSelection = RCC_USBCLKSOURCE_HSI48;
-    if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInit) != HAL_OK)
-    {
-      // Error_Handler();
-    }
-
-    /* Peripheral clock enable */
-    __HAL_RCC_USB_CLK_ENABLE();
-
-    /* USB_DRD_FS interrupt Init */
-    HAL_NVIC_SetPriority(USB_DRD_FS_IRQn, 0, 0);
-    HAL_NVIC_EnableIRQ(USB_DRD_FS_IRQn);
+    /* Enable USB peripheral clock - let HAL handle GPIO config */
+    // Note: USB pins PA11/PA12 are configured automatically
+    
+    /* USB interrupt Init */
+    HAL_NVIC_SetPriority(USB_IRQn, 0, 0);
+    HAL_NVIC_EnableIRQ(USB_IRQn);
   }
 }
 
 void HAL_PCD_MspDeInit(PCD_HandleTypeDef* pcdHandle)
 {
-  if(pcdHandle->Instance==USB_DRD_FS)
+  if(pcdHandle->Instance==USB)
   {
     /* Peripheral clock disable */
     __HAL_RCC_USB_CLK_DISABLE();
 
     /* USB_DRD_FS interrupt Deinit */
-    HAL_NVIC_DisableIRQ(USB_DRD_FS_IRQn);
+    HAL_NVIC_DisableIRQ(USB_IRQn);
   }
 }
 
@@ -72,18 +62,18 @@ USBD_StatusTypeDef USBD_LL_Init(USBD_HandleTypeDef *pdev)
   /* Init USB Ip. */
   if (pdev->id == DEVICE_FS) {
     /* Link the driver to the stack. */
-    hpcd_USB_DRD_FS.pData = pdev;
-    pdev->pData = &hpcd_USB_DRD_FS;
+    hpcd_USB_FS.pData = pdev;
+    pdev->pData = &hpcd_USB_FS;
 
-    hpcd_USB_DRD_FS.Instance = USB_DRD_FS;
-    hpcd_USB_DRD_FS.Init.dev_endpoints = 8;
-    hpcd_USB_DRD_FS.Init.speed = PCD_SPEED_FULL;
-    hpcd_USB_DRD_FS.Init.phy_itface = PCD_PHY_EMBEDDED;
-    hpcd_USB_DRD_FS.Init.Sof_enable = DISABLE;
-    hpcd_USB_DRD_FS.Init.low_power_enable = DISABLE;
-    hpcd_USB_DRD_FS.Init.lpm_enable = DISABLE;
-    hpcd_USB_DRD_FS.Init.battery_charging_enable = DISABLE;
-    if (HAL_PCD_Init(&hpcd_USB_DRD_FS) != HAL_OK)
+    hpcd_USB_FS.Instance = USB;
+    hpcd_USB_FS.Init.dev_endpoints = 8;
+    hpcd_USB_FS.Init.speed = PCD_SPEED_FULL;
+    hpcd_USB_FS.Init.phy_itface = PCD_PHY_EMBEDDED;
+    hpcd_USB_FS.Init.Sof_enable = DISABLE;
+    hpcd_USB_FS.Init.low_power_enable = DISABLE;
+    hpcd_USB_FS.Init.lpm_enable = DISABLE;
+    hpcd_USB_FS.Init.battery_charging_enable = DISABLE;
+    if (HAL_PCD_Init(&hpcd_USB_FS) != HAL_OK)
     {
       // Error_Handler( );
     }
@@ -540,9 +530,9 @@ void USBD_static_free(void *p)
 }
 
 /* USB DRD FS interrupt handler */
-void USB_DRD_FS_IRQHandler(void)
+void USB_IRQHandler(void)
 {
-  HAL_PCD_IRQHandler(&hpcd_USB_DRD_FS);
+  HAL_PCD_IRQHandler(&hpcd_USB_FS);
 }
 
 /**

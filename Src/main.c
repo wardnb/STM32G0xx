@@ -25,6 +25,10 @@
 #include "driver.h"
 #include "grbl/grbllib.h"
 
+#if USB_SERIAL_CDC
+#include "usb_device.h"
+#endif
+
 __IO uint32_t uwTick;
 
 void SystemClock_Config(void);
@@ -37,6 +41,11 @@ int main(void)
     SystemClock_Config();
 
     GPIO_Init();
+
+#if USB_SERIAL_CDC
+    // Initialize USB Device for CDC communication
+    MX_USB_DEVICE_Init();
+#endif
 
     // Initialize the driver
     if(!driver_init())
@@ -66,6 +75,22 @@ void SystemClock_Config(void)
     /** Initializes the RCC Oscillators according to the specified parameters
     * in the RCC_OscInitTypeDef structure.
     */
+#if USB_SERIAL_CDC
+    // Configure oscillators for USB support (need 48MHz for USB)
+    RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI | RCC_OSCILLATORTYPE_HSI48;
+    RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+    RCC_OscInitStruct.HSIDiv = RCC_HSI_DIV1;
+    RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+    RCC_OscInitStruct.HSI48State = RCC_HSI48_ON;  // Enable 48MHz for USB
+    RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+    RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
+    RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV1;
+    RCC_OscInitStruct.PLL.PLLN = 8;
+    RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
+    RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
+    RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
+#else
+    // Standard configuration for UART mode
     RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
     RCC_OscInitStruct.HSIState = RCC_HSI_ON;
     RCC_OscInitStruct.HSIDiv = RCC_HSI_DIV1;
@@ -77,6 +102,7 @@ void SystemClock_Config(void)
     RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
     RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
     RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
+#endif
     if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
     {
         Error_Handler();
@@ -94,6 +120,14 @@ void SystemClock_Config(void)
     {
         Error_Handler();
     }
+
+#if USB_SERIAL_CDC
+    // Enable HSI48 for USB clock
+    __HAL_RCC_HSI48_ENABLE();
+    
+    // Wait for HSI48 to be ready
+    while(!__HAL_RCC_GET_FLAG(RCC_FLAG_HSI48RDY));
+#endif
 }
 
 /**
@@ -156,6 +190,11 @@ static void GPIO_Init(void)
     GPIO_InitStruct.Pull = GPIO_NOPULL;
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(GPIOD, &GPIO_InitStruct);
+
+#if USB_SERIAL_CDC
+    /*Configure USB pins : PA11 PA12 - handled by USB HAL */
+    // USB pin configuration is handled automatically by HAL_PCD_MspInit
+#endif
 }
 
 /**
