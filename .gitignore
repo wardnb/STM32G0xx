@@ -1,0 +1,35 @@
+# PlatformIO
+.pio/
+.vscode/
+
+# Build artifacts
+*.o
+*.a
+*.elf
+*.bin
+*.hex
+*.map
+*.lst
+
+# Temporary files
+*.tmp
+*.bak
+*~
+
+# IDE files
+.settings/
+.project
+.cproject
+*.launch
+
+# Python
+__pycache__/
+*.pyc
+get-platformio.py
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Debug files
+*.dmp
