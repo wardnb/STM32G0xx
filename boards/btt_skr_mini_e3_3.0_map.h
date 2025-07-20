@@ -61,6 +61,10 @@
 #define Z_STEP_PIN              0  //PB0
 #define STEP_OUTMODE            GPIO_MAP
 
+// Define step pin masks for GPIO_MAP mode
+#define STEP_PORT               GPIOB  // All step pins are on GPIOB
+#define STEP_MASK               (X_STEP_BIT|Y_STEP_BIT|Z_STEP_BIT)
+
 // Define step direction output pins.
 #define X_DIRECTION_PORT        GPIOB
 #define X_DIRECTION_PIN         12 //PB12
@@ -68,7 +72,7 @@
 #define Y_DIRECTION_PIN         2  //PB2
 #define Z_DIRECTION_PORT        GPIOC
 #define Z_DIRECTION_PIN         5  //PC5
-#define DIRECTION_OUTMODE       GPIO_BITBAND
+#define DIRECTION_OUTMODE       GPIO_SHIFT0  // Use individual pin control since pins span ports
 
 // Define stepper driver enable/disable output pin.
 #define X_ENABLE_PORT           GPIOB
@@ -86,7 +90,22 @@
 #define Y_LIMIT_PIN             1 //PC1
 #define Z_LIMIT_PORT            GPIOC
 #define Z_LIMIT_PIN             2 //PC2
-#define LIMIT_INMODE            GPIO_BITBAND
+#define LIMIT_INMODE            GPIO_MAP
+
+// Define pin bit definitions required for GPIO operations
+#define X_STEP_BIT              (1<<X_STEP_PIN)     // (1<<13)
+#define Y_STEP_BIT              (1<<Y_STEP_PIN)     // (1<<10)  
+#define Z_STEP_BIT              (1<<Z_STEP_PIN)     // (1<<0)
+
+#define X_LIMIT_BIT             (1<<X_LIMIT_PIN)    // (1<<0)
+#define Y_LIMIT_BIT             (1<<Y_LIMIT_PIN)    // (1<<1)
+#define Z_LIMIT_BIT             (1<<Z_LIMIT_PIN)    // (1<<2)
+
+// Define limit pin masks for GPIO_MAP mode  
+#define LIMIT_MASK              (X_LIMIT_BIT|Y_LIMIT_BIT|Z_LIMIT_BIT)
+
+// Define devices IRQ mask (no additional interrupt devices on this board)
+#define DEVICES_IRQ_MASK        0
 
 // Define ganged axis or A axis step pulse and step direction output pins.
 #if N_ABC_MOTORS == 1

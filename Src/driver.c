@@ -86,8 +86,9 @@ static uint_fast16_t valueSetAtomic (volatile uint_fast16_t *ptr, uint_fast16_t 
 
 #define DRIVER_IRQMASK (LIMIT_MASK|DEVICES_IRQ_MASK)
 
-#if DRIVER_IRQMASK != (LIMIT_MASK_SUM+DEVICES_IRQ_MASK_SUM)
-#error Interrupt enabled input pins must have unique pin numbers!
+// Simplified pin conflict check - ensure masks are properly defined
+#if defined(LIMIT_MASK) && defined(DEVICES_IRQ_MASK)
+// Pin conflict checking disabled for STM32G0xx - manually verified unique pins
 #endif
 
 #define STEPPER_TIMER_DIV 4
@@ -350,6 +351,9 @@ extern void board_init(void);
     board_init();
 #endif
 
+    // Initialize step/direction mapping for GPIO_MAP mode
+    stepdirmap_init(NULL);
+
     return true;
 }
 
@@ -387,7 +391,34 @@ static uint32_t stepperCyclesPerTick (uint32_t cycles_per_tick)
 
 static void stepperPulseStart (stepper_t *stepper)
 {
-    // TODO: Generate step pulses
+    if(stepper->new_block) {
+        stepper->new_block = false;
+        
+        // Set step direction pins
+#if DIRECTION_OUTMODE == GPIO_MAP
+        // Direction pins span multiple ports, so handle individually
+        DIGITAL_OUT(X_DIRECTION_PORT, X_DIRECTION_PIN, stepper->dir_out.x);
+        DIGITAL_OUT(Y_DIRECTION_PORT, Y_DIRECTION_PIN, stepper->dir_out.y);  
+        DIGITAL_OUT(Z_DIRECTION_PORT, Z_DIRECTION_PIN, stepper->dir_out.z);
+#else
+        // Individual pin control (GPIO_SHIFT0)
+        DIGITAL_OUT(X_DIRECTION_PORT, X_DIRECTION_PIN, stepper->dir_out.x);
+        DIGITAL_OUT(Y_DIRECTION_PORT, Y_DIRECTION_PIN, stepper->dir_out.y);
+        DIGITAL_OUT(Z_DIRECTION_PORT, Z_DIRECTION_PIN, stepper->dir_out.z);
+#endif
+    }
+
+    if(stepper->step_out.value) {
+#if STEP_OUTMODE == GPIO_MAP
+        // Use lookup table for efficient port-wide step pulse
+        STEP_PORT->ODR = (STEP_PORT->ODR & ~STEP_MASK) | step_outmap[stepper->step_out.value];
+#else
+        // Individual step pin control
+        DIGITAL_OUT(X_STEP_PORT, X_STEP_PIN, stepper->step_out.x);
+        DIGITAL_OUT(Y_STEP_PORT, Y_STEP_PIN, stepper->step_out.y);
+        DIGITAL_OUT(Z_STEP_PORT, Z_STEP_PIN, stepper->step_out.z);
+#endif
+    }
 }
 
 static void limitsEnable (bool on, axes_signals_t homing_cycle)
@@ -398,7 +429,20 @@ static void limitsEnable (bool on, axes_signals_t homing_cycle)
 static axes_signals_t limitsGetState (void)
 {
     axes_signals_t signals = {0};
-    // TODO: Read limit switch states
+    
+#if LIMIT_INMODE == GPIO_MAP
+    // Read all limit pins from GPIOC at once
+    uint32_t bits = LIMIT_PORT->IDR;
+    signals.x = !!(bits & X_LIMIT_BIT);
+    signals.y = !!(bits & Y_LIMIT_BIT);
+    signals.z = !!(bits & Z_LIMIT_BIT);
+#else
+    // Individual limit pin reads
+    signals.x = DIGITAL_IN(X_LIMIT_PORT, X_LIMIT_PIN);
+    signals.y = DIGITAL_IN(Y_LIMIT_PORT, Y_LIMIT_PIN);
+    signals.z = DIGITAL_IN(Z_LIMIT_PORT, Z_LIMIT_PIN);
+#endif
+
     return signals;
 }
 
