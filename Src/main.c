@@ -25,7 +25,7 @@
 #include "driver.h"
 #include "grbl/grbllib.h"
 
-uint32_t uwTick;
+__IO uint32_t uwTick;
 
 void SystemClock_Config(void);
 static void GPIO_Init(void);

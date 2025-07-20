@@ -1,6 +1,5 @@
 /*
-
-  main.h - main header for STM32G0xx ARM processors
+  usb_serial.h - USB serial I/O stream for STM32G0xx ARM processors
 
   Part of grblHAL
 
@@ -13,20 +12,29 @@
 
   grblHAL is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
 
   You should have received a copy of the GNU General Public License
-  along with grblHAL. If not, see <http://www.gnu.org/licenses/>.
-
+  along with grblHAL.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __MAIN_H__
-#define __MAIN_H__
+#ifndef _USB_SERIAL_H_
+#define _USB_SERIAL_H_
 
-#include "stm32g0xx.h"
-#include "stm32g0xx_hal.h"
+#include "grbl/hal.h"
 
-void Error_Handler(void);
+typedef struct {
+    uint32_t timestamp;
+    union {
+        uint8_t value;
+        serial_linestate_t pin;
+    };
+} usb_linestate_t;
 
-#endif // __MAIN_H__
+extern volatile usb_linestate_t usb_linestate;
+
+const io_stream_t *usbInit (void);
+void usbBufferInput (uint8_t *data, uint32_t length);
+
+#endif

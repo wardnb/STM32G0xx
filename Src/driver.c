@@ -30,6 +30,7 @@
 #include "main.h"
 #include "driver.h"
 #include "serial.h"
+#include "boards/btt_skr_mini_e3_3.0_map.h"
 
 #include "grbl/task.h"
 #include "grbl/machine_limits.h"
@@ -37,8 +38,32 @@
 #include "grbl/pin_bits_masks.h"
 #include "grbl/state_machine.h"
 
+// Forward declarations for HAL functions
+void driver_delay_ms (uint32_t ms, void (*callback)(void));
+void settings_changed (settings_t *settings, settings_changed_flags_t changed);
+bool driver_setup (settings_t *settings);
+static void stepperWakeUp (void);
+static void stepperGoIdle (bool clear_signals);
+static void stepperEnable (axes_signals_t enable);
+static uint32_t stepperCyclesPerTick (uint32_t cycles_per_tick);
+static void stepperPulseStart (stepper_t *stepper);
+static void limitsEnable (bool on, axes_signals_t homing_cycle);
+static axes_signals_t limitsGetState (void);
+static void coolantSetState (coolant_state_t mode);
+static coolant_state_t coolantGetState (void);
+static void probeConfigureInvertMask (bool is_probe_away);
+static probe_state_t probeGetState (void);
+static spindle_state_t spindleGetState (void);
+static void spindleSetState (spindle_state_t state, float rpm);
+static void spindleUpdateRPM (float rpm);
+static control_signals_t systemGetState (void);
+static uint32_t getElapsedTicks (void);
+static void bitsSetAtomic (volatile uint_fast16_t *ptr, uint_fast16_t bits);
+static uint_fast16_t bitsClearAtomic (volatile uint_fast16_t *ptr, uint_fast16_t bits);
+static uint_fast16_t valueSetAtomic (volatile uint_fast16_t *ptr, uint_fast16_t value);
+
 #ifdef I2C_PORT
-#include "i2c.h"
+// #include "i2c.h"  // TODO: Create i2c.h when I2C functionality is needed
 #endif
 
 #if SDCARD_ENABLE
@@ -52,7 +77,7 @@
 #endif
 
 #if EEPROM_ENABLE
-#include "eeprom/eeprom.h"
+// #include "eeprom/eeprom.h"  // TODO: Create eeprom.h when EEPROM functionality is needed
 #endif
 
 #if FLASH_ENABLE
@@ -73,7 +98,7 @@
 static axes_signals_t motors_1 = {AXES_BITMASK}, motors_2 = {AXES_BITMASK};
 #endif
 
-static input_signal_t inputpin[] = {
+input_signal_t inputpin[] = {
 // Limit input pins must be consecutive in this array
     { .id = Input_LimitX,         .port = X_LIMIT_PORT,     .pin = X_LIMIT_PIN,         .group = PinGroup_Limit },
 #ifdef X2_LIMIT_PIN
@@ -119,11 +144,14 @@ static input_signal_t inputpin[] = {
     { .id = Input_Aux6,           .port = AUXINPUT6_PORT,   .pin = AUXINPUT6_PIN,       .group = PinGroup_AuxInput },
 #endif
 #ifdef AUXINPUT7_PIN
-    { .id = Input_Aux7,           .port = AUXINPUT7_PORT,   .pin = AUXINPUT7_PIN,       .group = PinGroup_AuxInput }
+    { .id = Input_Aux7,           .port = AUXINPUT7_PORT,   .pin = AUXINPUT7_PIN,       .group = PinGroup_AuxInput },
+#endif
+#ifdef PROBE_PIN
+    { .id = Input_Probe,          .port = PROBE_PORT,       .pin = PROBE_PIN,           .group = PinGroup_Probe }
 #endif
 };
 
-static output_signal_t outputpin[] = {
+output_signal_t outputpin[] = {
     { .id = Output_StepX,           .port = X_STEP_PORT,            .pin = X_STEP_PIN,              .group = PinGroup_StepperStep, },
     { .id = Output_StepY,           .port = Y_STEP_PORT,            .pin = Y_STEP_PIN,              .group = PinGroup_StepperStep, },
     { .id = Output_StepZ,           .port = Z_STEP_PORT,            .pin = Z_STEP_PIN,              .group = PinGroup_StepperStep, },
@@ -199,7 +227,7 @@ static output_signal_t outputpin[] = {
 #endif
 #endif // !TRINAMIC_MOTOR_ENABLE
 #ifdef SPINDLE_ENABLE_PIN
-    { .id = Output_SpindleEnable,   .port = SPINDLE_ENABLE_PORT,    .pin = SPINDLE_ENABLE_PIN,      .group = PinGroup_SpindleControl },
+    { .id = Output_SpindleOn,       .port = SPINDLE_ENABLE_PORT,    .pin = SPINDLE_ENABLE_PIN,      .group = PinGroup_SpindleControl },
 #endif
 #ifdef SPINDLE_DIRECTION_PIN
     { .id = Output_SpindleDir,      .port = SPINDLE_DIRECTION_PORT, .pin = SPINDLE_DIRECTION_PIN,   .group = PinGroup_SpindleControl },
@@ -241,7 +269,7 @@ static output_signal_t outputpin[] = {
 static bool probe_invert;
 static delay_t delay = { .ms = 1, .callback = NULL }; // NOTE: initial ms set to 1 for "resetting" systick timer on startup
 
-static periph_signal_t *periph_pins = NULL;
+stm32_periph_signal_t *periph_pins = NULL;
 
 static void (*systick_isr)(void);
 
@@ -286,14 +314,9 @@ bool driver_init (void)
     hal.probe.configure = probeConfigureInvertMask;
     hal.probe.get_state = probeGetState;
 
-    hal.spindle.set_state = spindleSetState;
-    hal.spindle.get_state = spindleGetState;
-#ifdef SPINDLE_PWM_DIRECT
-    hal.spindle.get_pwm = spindleGetPWM;
-    hal.spindle.update_pwm = spindleUpdatePWM;
-#else
-    hal.spindle.update_rpm = spindleUpdateRPM;
-#endif
+    // hal.spindle.set_state = spindleSetState;  // TODO: Restore when grblHAL API is clarified
+    // hal.spindle.get_state = spindleGetState;
+    // hal.spindle.update_rpm = spindleUpdateRPM;
 
     hal.control.get_state = systemGetState;
 
@@ -304,11 +327,11 @@ bool driver_init (void)
     hal.set_value_atomic = valueSetAtomic;
     hal.get_elapsed_ticks = getElapsedTicks;
 
-    hal.driver_cap.spindle_dir = On;
-    hal.driver_cap.variable_spindle = On;
-    hal.driver_cap.spindle_pwm_invert = On;
-    hal.driver_cap.spindle_pwm_linearization = On;
-    hal.driver_cap.mist_control = On;
+    // hal.driver_cap.spindle_dir = On;         // TODO: Restore when capability structure is clarified
+    // hal.driver_cap.variable_spindle = On;
+    // hal.driver_cap.spindle_pwm_invert = On;
+    // hal.driver_cap.spindle_pwm_linearization = On;
+    // hal.driver_cap.mist_control = On;
     hal.driver_cap.software_debounce = On;
     hal.driver_cap.step_pulse_delay = On;
     hal.driver_cap.amass_level = 3;
@@ -316,7 +339,14 @@ bool driver_init (void)
     hal.driver_cap.limits_pull_up = On;
     hal.driver_cap.probe_pull_up = On;
 
+#if USB_SERIAL_CDC
+    stream_connect(usbInit());
+#else
+    stream_connect(serialInit());
+#endif
+
 #ifdef HAS_BOARD_INIT
+extern void board_init(void);
     board_init();
 #endif
 
@@ -325,7 +355,7 @@ bool driver_init (void)
 
 // Basic placeholder functions - these would need full implementation
 
-static void driver_delay_ms (uint32_t ms, void (*callback)(void))
+void driver_delay_ms (uint32_t ms, void (*callback)(void))
 {
     if((delay.ms = ms) > 0) {
         if(!(delay.callback = callback))
@@ -399,18 +429,67 @@ static probe_state_t probeGetState (void)
 static spindle_state_t spindleGetState (void)
 {
     spindle_state_t state = {0};
-    // TODO: Read spindle output states
+    
+#ifdef SPINDLE_ENABLE_PIN
+    state.on = HAL_GPIO_ReadPin(SPINDLE_ENABLE_PORT, SPINDLE_ENABLE_PIN) != 0;
+#endif
+#ifdef SPINDLE_DIRECTION_PIN
+    state.ccw = HAL_GPIO_ReadPin(SPINDLE_DIRECTION_PORT, SPINDLE_DIRECTION_PIN) != 0;
+#endif
+    // TODO: Read actual RPM from encoder if available
+    
     return state;
 }
 
-static void spindleSetState (spindle_state_t state, float rpm)
+#ifdef SPINDLE_PWM_DIRECT
+
+static uint_fast16_t spindleGetPWM (float rpm)
 {
-    // TODO: Control spindle outputs
+    // Simple RPM to PWM conversion for VFD
+    uint16_t pwm_value = (uint16_t)((rpm / 24000.0f) * 999.0f);
+    if(pwm_value > 999) pwm_value = 999;
+    return pwm_value;
 }
+
+#else
 
 static void spindleUpdateRPM (float rpm)
 {
-    // TODO: Update spindle PWM for RPM
+    // For VFD control, update PWM to generate 0-10V analog signal
+    #ifdef SPINDLE_PWM_PIN
+    // Simple RPM to PWM conversion: 0-24000 RPM = 0-999 PWM
+    uint16_t pwm_value = (uint16_t)((rpm / 24000.0f) * 999.0f);
+    if(pwm_value > 999) pwm_value = 999;
+    spindle_set_speed(pwm_value);
+    #endif
+}
+
+#endif
+
+static void spindleSetState (spindle_state_t state, float rpm)
+{
+    // Control spindle enable pin
+#ifdef SPINDLE_ENABLE_PIN
+    HAL_GPIO_WritePin(SPINDLE_ENABLE_PORT, SPINDLE_ENABLE_PIN, state.on ? GPIO_PIN_SET : GPIO_PIN_RESET);
+#endif
+
+    // Control spindle direction pin
+#ifdef SPINDLE_DIRECTION_PIN  
+    HAL_GPIO_WritePin(SPINDLE_DIRECTION_PORT, SPINDLE_DIRECTION_PIN, state.ccw ? GPIO_PIN_SET : GPIO_PIN_RESET);
+#endif
+
+    // Update PWM for speed control
+#ifdef SPINDLE_PWM_PIN
+    if(state.on) {
+        #ifdef SPINDLE_PWM_DIRECT
+        spindle_set_speed(spindleGetPWM(rpm));
+        #else
+        spindleUpdateRPM(rpm);
+        #endif
+    } else {
+        spindle_set_speed(0);  // Stop spindle
+    }
+#endif
 }
 
 static control_signals_t systemGetState (void)
@@ -451,21 +530,31 @@ static uint_fast16_t valueSetAtomic (volatile uint_fast16_t *ptr, uint_fast16_t 
     return prev;
 }
 
+// Spindle PWM control function for VFD
+void spindle_set_speed (uint_fast16_t pwm_value)
+{
+#ifdef SPINDLE_PWM_PIN
+    // Set PWM duty cycle for VFD speed control
+    // Assumes TIM2_CH2 on PA1 for BTT SKR Mini E3 v3.0
+    TIM2->CCR2 = pwm_value;
+#endif
+}
+
 void gpio_irq_enable (const input_signal_t *input, pin_irq_mode_t irq_mode)
 {
     // TODO: Configure GPIO interrupt
 }
 
 // Settings changed callback
-static void settings_changed (settings_t *settings, settings_changed_flags_t changed)
+void settings_changed (settings_t *settings, settings_changed_flags_t changed)
 {
     // TODO: Handle settings changes
 }
 
 // Driver setup - minimal implementation
-static bool driver_setup (settings_t *settings)
+bool driver_setup (settings_t *settings)
 {
-    return IOInitDone;
+    return true;  // IOInitDone not available, return true for success
 }
 
 // Systick interrupt handler

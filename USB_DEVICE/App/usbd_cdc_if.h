@@ -1,6 +1,5 @@
 /*
-
-  main.h - main header for STM32G0xx ARM processors
+  usbd_cdc_if.h - USB CDC interface for STM32G0xx
 
   Part of grblHAL
 
@@ -13,20 +12,28 @@
 
   grblHAL is distributed in the hope that it will be useful,
   but WITHOUT ANY WARRANTY; without even the implied warranty of
-  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
   GNU General Public License for more details.
 
   You should have received a copy of the GNU General Public License
-  along with grblHAL. If not, see <http://www.gnu.org/licenses/>.
-
+  along with grblHAL.  If not, see <http://www.gnu.org/licenses/>.
 */
 
-#ifndef __MAIN_H__
-#define __MAIN_H__
+#ifndef __USBD_CDC_IF_H__
+#define __USBD_CDC_IF_H__
 
-#include "stm32g0xx.h"
-#include "stm32g0xx_hal.h"
+#ifdef __cplusplus
+ extern "C" {
+#endif
 
-void Error_Handler(void);
+#include "usbd_cdc.h"
 
-#endif // __MAIN_H__
+extern USBD_CDC_ItfTypeDef USBD_Interface_fops_FS;
+
+uint8_t CDC_Transmit_FS(uint8_t* Buf, uint16_t Len);
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif /* __USBD_CDC_IF_H__ */

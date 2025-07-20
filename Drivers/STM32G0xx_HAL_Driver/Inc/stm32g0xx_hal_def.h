@@ -17,6 +17,7 @@
 #include "stm32g0xx.h"
 #include <stddef.h>
 
+
 /* Exported types ------------------------------------------------------------*/
 
 /** 
@@ -47,6 +48,12 @@ typedef enum
 
 #define HAL_IS_BIT_SET(REG, BIT)         (((REG) & (BIT)) == (BIT))
 #define HAL_IS_BIT_CLR(REG, BIT)         (((REG) & (BIT)) == 0U)
+
+#define READ_REG(REG)                    ((REG))
+#define READ_BIT(REG, BIT)               ((REG) & (BIT))
+#define CLEAR_BIT(REG, BIT)              ((REG) &= ~(BIT))
+#define SET_BIT(REG, BIT)                ((REG) |= (BIT))
+#define WRITE_REG(REG, VAL)              ((REG) = (VAL))
 
 #define __HAL_LINKDMA(__HANDLE__, __PPP_DMA_FIELD__, __DMA_HANDLE__)               \
                         do{                                                      \
@@ -93,7 +100,7 @@ typedef enum
                                     }while (0U)
 #endif /* USE_RTOS */
 
-#if  defined ( __GNUC__ ) && \!defined (__CC_ARM) /* GNU Compiler */
+#if  defined ( __GNUC__ ) && !defined (__CC_ARM) /* GNU Compiler */
   #ifndef __weak
     #define __weak   __attribute__((weak))
   #endif /* __weak */
@@ -161,4 +168,3 @@ typedef enum
 #endif
 
 #endif /* ___STM32G0xx_HAL_DEF */
-EOF < /dev/null

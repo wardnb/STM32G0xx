@@ -80,8 +80,11 @@
 
 // Define homing/hard limit switch input pins.
 #define LIMIT_PORT              GPIOC
+#define X_LIMIT_PORT            GPIOC
 #define X_LIMIT_PIN             0 //PC0
+#define Y_LIMIT_PORT            GPIOC  
 #define Y_LIMIT_PIN             1 //PC1
+#define Z_LIMIT_PORT            GPIOC
 #define Z_LIMIT_PIN             2 //PC2
 #define LIMIT_INMODE            GPIO_BITBAND
 

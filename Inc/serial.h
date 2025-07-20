@@ -30,7 +30,7 @@
 #include "grbl/hal.h"
 #include "grbl/stream.h"
 
-void serialInit(void);
+const io_stream_t *serialInit(void);
 io_stream_t *serialInit0 (uint32_t baud_rate);
 
 #endif

@@ -49,4 +49,3 @@
 #endif /* __cplusplus */
 
 #endif /* __STM32G0xx_H */
-EOF < /dev/null

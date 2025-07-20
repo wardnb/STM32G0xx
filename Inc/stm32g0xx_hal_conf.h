@@ -46,6 +46,7 @@
 #define HAL_SPI_MODULE_ENABLED
 #define HAL_TIM_MODULE_ENABLED
 #define HAL_UART_MODULE_ENABLED
+#define HAL_PCD_MODULE_ENABLED
 
 /* ########################## Oscillator Values adaptation ################### */
 /**
@@ -161,6 +162,10 @@
 #ifdef HAL_UART_MODULE_ENABLED
 #include "stm32g0xx_hal_uart.h"
 #endif /* HAL_UART_MODULE_ENABLED */
+
+#ifdef HAL_PCD_MODULE_ENABLED
+#include "stm32g0xx_hal_pcd.h"
+#endif /* HAL_PCD_MODULE_ENABLED */
 
 /* Exported macro ------------------------------------------------------------*/
 #ifdef  USE_FULL_ASSERT

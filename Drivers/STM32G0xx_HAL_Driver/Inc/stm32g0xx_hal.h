@@ -16,9 +16,22 @@
 /* Includes ------------------------------------------------------------------*/
 #include "stm32g0xx_hal_conf.h"
 
+/* Ensure device header is included for TypeDef definitions */
+#include "stm32g0xx.h"
+
 /* Standard includes */
 #include <stddef.h>
 #include <stdint.h>
+
+/* HAL version definition */
+#define __STM32G0_HAL_VERSION_MAIN   (0x01U) /*!< [31:24] main version */
+#define __STM32G0_HAL_VERSION_SUB1   (0x00U) /*!< [23:16] sub1 version */
+#define __STM32G0_HAL_VERSION_SUB2   (0x00U) /*!< [15:8]  sub2 version */
+#define __STM32G0_HAL_VERSION_RC     (0x00U) /*!< [7:0]  release candidate */
+#define __STM32G0_HAL_VERSION         ((__STM32G0_HAL_VERSION_MAIN << 24U)\
+                                      |(__STM32G0_HAL_VERSION_SUB1 << 16U)\
+                                      |(__STM32G0_HAL_VERSION_SUB2 << 8U )\
+                                      |(__STM32G0_HAL_VERSION_RC))
 
 /* HAL module includes */
 #ifdef HAL_GPIO_MODULE_ENABLED
@@ -38,13 +51,7 @@
 #endif /* HAL_UART_MODULE_ENABLED */
 
 /* Exported types ------------------------------------------------------------*/
-typedef enum 
-{
-  HAL_OK       = 0x00U,
-  HAL_ERROR    = 0x01U,
-  HAL_BUSY     = 0x02U,
-  HAL_TIMEOUT  = 0x03U
-} HAL_StatusTypeDef;
+/* HAL_StatusTypeDef and HAL_LockTypeDef are defined in stm32g0xx_hal_def.h */
 
 typedef enum
 {
@@ -53,12 +60,6 @@ typedef enum
   HAL_TICK_FREQ_1KHZ         = 1U,
   HAL_TICK_FREQ_DEFAULT      = HAL_TICK_FREQ_1KHZ
 } HAL_TickFreqTypeDef;
-
-typedef enum
-{
-  HAL_UNLOCKED = 0x00U,
-  HAL_LOCKED   = 0x01U
-} HAL_LockTypeDef;
 
 /* Exported constants --------------------------------------------------------*/
 #define HAL_MAX_DELAY      0xFFFFFFFFU
@@ -69,7 +70,7 @@ typedef enum
 #define CLOCKSWITCH_TIMEOUT_VALUE  5000U  /* 5 s    */
 
 /* Tick frequency */
-extern uint32_t uwTickFreq;
+extern HAL_TickFreqTypeDef uwTickFreq;
 extern uint32_t uwTickPrio;
 
 /* SysTick counter */
@@ -79,7 +80,7 @@ extern __IO uint32_t uwTick;
 extern uint32_t SystemCoreClock;
 
 /* Exported macros -----------------------------------------------------------*/
-#define UNUSED(x) ((void)(x))
+/* UNUSED is defined in stm32g0xx_hal_def.h */
 #define __IO volatile
 #define __IM volatile const
 #define __OM volatile
@@ -123,4 +124,3 @@ uint32_t HAL_SYSTICK_Config(uint32_t TicksNumb);
 #endif
 
 #endif /* __STM32G0xx_HAL_H */
-EOF < /dev/null

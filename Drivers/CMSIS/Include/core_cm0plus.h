@@ -27,7 +27,6 @@
 
 #include "cmsis_version.h"
 #include "cmsis_compiler.h"
-#include "mpu_armv7.h"
 
 /* IO definitions (access restrictions to peripheral registers) */
 #ifdef __cplusplus
@@ -126,7 +125,8 @@ typedef struct
 #define SysTick             ((SysTick_Type   *)     SysTick_BASE  )   /*!< SysTick configuration struct */
 #define NVIC                ((NVIC_Type      *)     NVIC_BASE     )   /*!< NVIC configuration struct */
 
-/* Core functions */
+/* Core functions - commented out to avoid conflicts with cmsis_gcc.h */
+/*
 __STATIC_INLINE void __enable_irq(void)
 {
   __asm volatile ("cpsie i" : : : "memory");
@@ -136,22 +136,24 @@ __STATIC_INLINE void __disable_irq(void)
 {
   __asm volatile ("cpsid i" : : : "memory");
 }
+*/
 
+/* SysTick_Config function commented out due to missing constants
 __STATIC_INLINE uint32_t SysTick_Config(uint32_t ticks)
 {
   if ((ticks - 1UL) > SysTick_LOAD_RELOAD_Msk)
   {
-    return (1UL);                                                   /* Reload value impossible */
+    return (1UL);
   }
-
-  SysTick->LOAD  = (uint32_t)(ticks - 1UL);                        /* set reload register */
-  NVIC_SetPriority (SysTick_IRQn, (1UL << __NVIC_PRIO_BITS) - 1UL); /* set Priority for Systick Interrupt */
-  SysTick->VAL   = 0UL;                                             /* Load the SysTick Counter Value */
+  SysTick->LOAD  = (uint32_t)(ticks - 1UL);
+  NVIC_SetPriority (SysTick_IRQn, (1UL << __NVIC_PRIO_BITS) - 1UL);
+  SysTick->VAL   = 0UL;
   SysTick->CTRL  = SysTick_CTRL_CLKSOURCE_Msk |
                    SysTick_CTRL_TICKINT_Msk   |
-                   SysTick_CTRL_ENABLE_Msk;                         /* Enable SysTick IRQ and SysTick Timer */
-  return (0UL);                                                     /* Function successful */
+                   SysTick_CTRL_ENABLE_Msk;
+  return (0UL);
 }
+*/
 
 #ifdef __cplusplus
 }

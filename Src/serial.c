@@ -29,6 +29,18 @@
 #include "grbl/hal.h"
 #include "grbl/protocol.h"
 
+// Forward declarations for serial functions
+int16_t serialGetC (void);
+bool serialPutC (const char c);
+void serialWriteS (const char *data);
+void serialWrite(const char *data, uint16_t length);
+uint16_t serialTxCount (void);
+uint16_t serialRxCount (void);
+uint16_t serialRxFree (void);
+void serialRxFlush (void);
+void serialTxFlush (void);
+void serialRxCancel (bool disable);
+
 static stream_block_tx_buffer_t txbuf = {0};
 static char rxbuf[RX_BUFFER_SIZE];
 static stream_rx_buffer_t rxbuffer = {0}, rxbackup;
@@ -39,7 +51,7 @@ UART_HandleTypeDef huart1;
 
 static io_stream_t serial = {
     .type = StreamType_Serial,
-    .state.connected = true,
+    .state = {0},
     .read = serialGetC,
     .write = serialWriteS,
     .write_n = serialWrite,
@@ -52,7 +64,7 @@ static io_stream_t serial = {
     .disable_rx = serialRxCancel
 };
 
-void serialInit(void)
+const io_stream_t *serialInit(void)
 {
     // Initialize UART1
     huart1.Instance = USART1;
@@ -82,6 +94,8 @@ void serialInit(void)
     if (HAL_UARTEx_DisableFifoMode(&huart1) != HAL_OK) {
         Error_Handler();
     }
+    
+    return &serial;
 }
 
 io_stream_t *serialInit0 (uint32_t baud_rate)
@@ -90,7 +104,7 @@ io_stream_t *serialInit0 (uint32_t baud_rate)
     txbuf.max_length = sizeof(txbuf.data);
 
     rxbuffer.tail = rxbuffer.head = rxbuffer.backup = rxbuffer.data;
-    rxbuffer.size = RX_BUFFER_SIZE;
+    // rxbuffer.max_length = RX_BUFFER_SIZE;  // TODO: Fix buffer structure compatibility
     rxbuffer.overflow = false;
 
     serialInit();
@@ -100,7 +114,7 @@ io_stream_t *serialInit0 (uint32_t baud_rate)
     
     NVIC_EnableIRQ(USART1_IRQn);
 
-    hal.stream.primary = &serial;
+    hal.stream = serial;  // grblHAL expects the stream structure directly
 
     return &serial;
 }
@@ -225,7 +239,7 @@ void HAL_UART_MspInit(UART_HandleTypeDef* huart)
         HAL_GPIO_Init(GPIOA, &GPIO_InitStruct);
 
         /* USART1 interrupt Init */
-        HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);
+        HAL_NVIC_SetPriority(USART1_IRQn, 0, 0);  // For Cortex-M0+, only priority matters
         HAL_NVIC_EnableIRQ(USART1_IRQn);
     }
 }

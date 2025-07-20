@@ -79,4 +79,3 @@ extern void SystemCoreClockUpdate(void);
 #endif
 
 #endif /*__SYSTEM_STM32G0XX_H */
-EOF < /dev/null

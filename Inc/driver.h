@@ -99,15 +99,19 @@
 #define GPIO_BITBAND 15
 
 typedef struct {
+    uint32_t id;                // Output ID (grblHAL enum)  
     GPIO_TypeDef *port;
     uint8_t pin;
     uint32_t bit;
+    uint32_t group;             // Pin group
 } output_signal_t;
 
 typedef struct {
+    uint32_t id;                // Input ID (grblHAL enum)
     GPIO_TypeDef *port;
     uint8_t pin;
     uint32_t bit;
+    uint32_t group;             // Pin group
 } input_signal_t;
 
 typedef struct {
@@ -115,11 +119,18 @@ typedef struct {
     uint8_t pin;
     uint32_t bit;
     uint8_t offset;
-} periph_signal_t;
+} stm32_periph_signal_t;
 
 extern input_signal_t inputpin[];
 extern output_signal_t outputpin[];
-extern periph_signal_t *periph_pins;
+extern stm32_periph_signal_t *periph_pins;
+
+#ifdef HAS_BOARD_INIT
+void board_init (void);
+#endif
+
+// Spindle control functions
+void spindle_set_speed (uint_fast16_t pwm_value);
 
 // timer definitions
 
@@ -139,7 +150,7 @@ typedef struct {
     uint32_t ccmr_reg;
     uint32_t oc_mode;
     IRQn_Type irq;
-} spindle_pwm_t;
+} stm32_spindle_pwm_t;
 
 #ifdef HAS_IOPORTS
 typedef struct {

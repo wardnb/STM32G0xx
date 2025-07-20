@@ -192,4 +192,3 @@ typedef struct
 #endif /* __cplusplus */
 
 #endif /* __STM32G0B1xx_H */
-EOF < /dev/null

@@ -204,9 +204,8 @@ typedef enum
   * @}
   */
 
-#if defined (USE_HAL_DRIVER)
- #include "stm32g0xx_hal.h"
-#endif /* USE_HAL_DRIVER */
+/* HAL driver include removed to prevent circular dependency.
+   Include stm32g0xx_hal.h manually in application code after this header. */
 
 #ifdef __cplusplus
 }

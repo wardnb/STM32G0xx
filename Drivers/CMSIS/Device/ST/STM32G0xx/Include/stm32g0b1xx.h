@@ -166,6 +166,61 @@ typedef struct
   __IO uint32_t CSR;        /*!< RCC clock control & status register,                                     Address offset: 0x60 */
 } RCC_TypeDef;
 
+/** 
+  * @brief Debug MCU
+  */
+typedef struct
+{
+  __IO uint32_t IDCODE;     /*!< MCU device ID code,              Address offset: 0x00 */
+  __IO uint32_t CR;         /*!< Debug MCU configuration register, Address offset: 0x04 */
+} DBGMCU_TypeDef;
+
+/** 
+  * @brief TIM
+  */
+typedef struct
+{
+  __IO uint32_t CR1;         /*!< TIM control register 1,              Address offset: 0x00 */
+  __IO uint32_t CR2;         /*!< TIM control register 2,              Address offset: 0x04 */
+  __IO uint32_t SMCR;        /*!< TIM slave mode control register,     Address offset: 0x08 */
+  __IO uint32_t DIER;        /*!< TIM DMA/interrupt enable register,   Address offset: 0x0C */
+  __IO uint32_t SR;          /*!< TIM status register,                 Address offset: 0x10 */
+  __IO uint32_t EGR;         /*!< TIM event generation register,       Address offset: 0x14 */
+  __IO uint32_t CCMR1;       /*!< TIM capture/compare mode register 1, Address offset: 0x18 */
+  __IO uint32_t CCMR2;       /*!< TIM capture/compare mode register 2, Address offset: 0x1C */
+  __IO uint32_t CCER;        /*!< TIM capture/compare enable register, Address offset: 0x20 */
+  __IO uint32_t CNT;         /*!< TIM counter register,                Address offset: 0x24 */
+  __IO uint32_t PSC;         /*!< TIM prescaler,                       Address offset: 0x28 */
+  __IO uint32_t ARR;         /*!< TIM auto-reload register,            Address offset: 0x2C */
+  __IO uint32_t RCR;         /*!< TIM repetition counter register,     Address offset: 0x30 */
+  __IO uint32_t CCR1;        /*!< TIM capture/compare register 1,      Address offset: 0x34 */
+  __IO uint32_t CCR2;        /*!< TIM capture/compare register 2,      Address offset: 0x38 */
+  __IO uint32_t CCR3;        /*!< TIM capture/compare register 3,      Address offset: 0x3C */
+  __IO uint32_t CCR4;        /*!< TIM capture/compare register 4,      Address offset: 0x40 */
+  __IO uint32_t BDTR;        /*!< TIM break and dead-time register,    Address offset: 0x44 */
+  __IO uint32_t DCR;         /*!< TIM DMA control register,            Address offset: 0x48 */
+  __IO uint32_t DMAR;        /*!< TIM DMA address for full transfer,   Address offset: 0x4C */
+} TIM_TypeDef;
+
+/** 
+  * @brief UART
+  */
+typedef struct
+{
+  __IO uint32_t CR1;    /*!< UART Control register 1,                 Address offset: 0x00 */
+  __IO uint32_t CR2;    /*!< UART Control register 2,                 Address offset: 0x04 */
+  __IO uint32_t CR3;    /*!< UART Control register 3,                 Address offset: 0x08 */
+  __IO uint32_t BRR;    /*!< UART Baud rate register,                 Address offset: 0x0C */
+  __IO uint32_t GTPR;   /*!< UART Guard time and prescaler register,  Address offset: 0x10 */
+  __IO uint32_t RTOR;   /*!< UART Receiver timeout register,          Address offset: 0x14 */
+  __IO uint32_t RQR;    /*!< UART Request register,                   Address offset: 0x18 */
+  __IO uint32_t ISR;    /*!< UART Interrupt and status register,      Address offset: 0x1C */
+  __IO uint32_t ICR;    /*!< UART Interrupt clear register,           Address offset: 0x20 */
+  __IO uint32_t RDR;    /*!< UART Receive data register,              Address offset: 0x24 */
+  __IO uint32_t TDR;    /*!< UART Transmit data register,             Address offset: 0x28 */
+  __IO uint32_t PRESC;  /*!< UART Prescaler register,                 Address offset: 0x2C */
+} UART_TypeDef;
+
 /**
   * @}
   */
@@ -278,6 +333,15 @@ typedef struct
 #define GPIOE_BASE            (IOPORT_BASE + 0x00001000UL)
 #define GPIOF_BASE            (IOPORT_BASE + 0x00001400UL)
 
+/*!< System memory and OTP area */
+#define SYSTEM_MEMORY_BASE    0x1FFF0000UL /*!< System Memory base address */
+#define OTP_AREA_BASE         0x1FFF7000UL /*!< OTP area base address */
+#define UID_BASE              0x1FFF7590UL /*!< Unique device ID register base address */
+#define FLASHSIZE_BASE        0x1FFF75E0UL /*!< Flash size data register base address */
+
+/*!< Debug MCU */
+#define DBGMCU_BASE           0x40015800UL /*!< Debug MCU registers base address */
+
 /**
   * @}
   */
@@ -292,6 +356,23 @@ typedef struct
 #define GPIOE               ((GPIO_TypeDef *) GPIOE_BASE)
 #define GPIOF               ((GPIO_TypeDef *) GPIOF_BASE)
 #define RCC                 ((RCC_TypeDef *) RCC_BASE)
+#define DBGMCU              ((DBGMCU_TypeDef *) DBGMCU_BASE)
+
+#define TIM1                ((TIM_TypeDef *) TIM1_BASE)
+#define TIM2                ((TIM_TypeDef *) TIM2_BASE)
+#define TIM3                ((TIM_TypeDef *) TIM3_BASE)
+#define TIM6                ((TIM_TypeDef *) TIM6_BASE)
+#define TIM7                ((TIM_TypeDef *) TIM7_BASE)
+#define TIM14               ((TIM_TypeDef *) TIM14_BASE)
+#define TIM15               ((TIM_TypeDef *) TIM15_BASE)
+#define TIM16               ((TIM_TypeDef *) TIM16_BASE)
+#define TIM17               ((TIM_TypeDef *) TIM17_BASE)
+
+#define USART1              ((UART_TypeDef *) USART1_BASE)
+#define USART2              ((UART_TypeDef *) USART2_BASE)
+#define USART3              ((UART_TypeDef *) USART3_BASE)
+#define USART4              ((UART_TypeDef *) USART4_BASE)
+#define LPUART1             ((UART_TypeDef *) LPUART1_BASE)
 
 /**
   * @}
@@ -320,9 +401,83 @@ typedef struct
 
 /******************************************************************************/
 /*                                                                            */
+/*                            Debug MCU (DBGMCU)                             */
+/*                                                                            */
+/******************************************************************************/
+/******************  Bit definition for DBGMCU_IDCODE register  **************/
+#define DBGMCU_IDCODE_DEV_ID_Pos       (0U)
+#define DBGMCU_IDCODE_DEV_ID_Msk       (0xFFFUL << DBGMCU_IDCODE_DEV_ID_Pos)    /*!< 0x00000FFF */
+#define DBGMCU_IDCODE_DEV_ID           DBGMCU_IDCODE_DEV_ID_Msk                 /*!< Device ID */
+#define DBGMCU_IDCODE_REV_ID_Pos       (16U)
+#define DBGMCU_IDCODE_REV_ID_Msk       (0xFFFFUL << DBGMCU_IDCODE_REV_ID_Pos)   /*!< 0xFFFF0000 */
+#define DBGMCU_IDCODE_REV_ID           DBGMCU_IDCODE_REV_ID_Msk                 /*!< Revision ID */
+
+/******************************************************************************/
+/*                                                                            */
 /*                        General Purpose I/O (GPIO)                         */
 /*                                                                            */
 /******************************************************************************/
+/******************  Bits definition for GPIO pins  **************************/
+#define GPIO_PIN_0                     ((uint16_t)0x0001)  /*!< Pin 0 selected    */
+#define GPIO_PIN_1                     ((uint16_t)0x0002)  /*!< Pin 1 selected    */
+#define GPIO_PIN_2                     ((uint16_t)0x0004)  /*!< Pin 2 selected    */
+#define GPIO_PIN_3                     ((uint16_t)0x0008)  /*!< Pin 3 selected    */
+#define GPIO_PIN_4                     ((uint16_t)0x0010)  /*!< Pin 4 selected    */
+#define GPIO_PIN_5                     ((uint16_t)0x0020)  /*!< Pin 5 selected    */
+#define GPIO_PIN_6                     ((uint16_t)0x0040)  /*!< Pin 6 selected    */
+#define GPIO_PIN_7                     ((uint16_t)0x0080)  /*!< Pin 7 selected    */
+#define GPIO_PIN_8                     ((uint16_t)0x0100)  /*!< Pin 8 selected    */
+#define GPIO_PIN_9                     ((uint16_t)0x0200)  /*!< Pin 9 selected    */
+#define GPIO_PIN_10                    ((uint16_t)0x0400)  /*!< Pin 10 selected   */
+#define GPIO_PIN_11                    ((uint16_t)0x0800)  /*!< Pin 11 selected   */
+#define GPIO_PIN_12                    ((uint16_t)0x1000)  /*!< Pin 12 selected   */
+#define GPIO_PIN_13                    ((uint16_t)0x2000)  /*!< Pin 13 selected   */
+#define GPIO_PIN_14                    ((uint16_t)0x4000)  /*!< Pin 14 selected   */
+#define GPIO_PIN_15                    ((uint16_t)0x8000)  /*!< Pin 15 selected   */
+#define GPIO_PIN_All                   ((uint16_t)0xFFFF)  /*!< All pins selected */
+
+/* GPIO mode definitions */
+#define GPIO_MODE_INPUT                        0x00000000U   /*!< Input Floating Mode                   */
+#define GPIO_MODE_OUTPUT_PP                    0x00000001U   /*!< Output Push Pull Mode                 */
+#define GPIO_MODE_OUTPUT_OD                    0x00000011U   /*!< Output Open Drain Mode                */
+#define GPIO_MODE_AF_PP                        0x00000002U   /*!< Alternate Function Push Pull Mode     */
+#define GPIO_MODE_AF_OD                        0x00000012U   /*!< Alternate Function Open Drain Mode    */
+#define GPIO_MODE_ANALOG                       0x00000003U   /*!< Analog Mode  */
+
+/* GPIO pull-up/pull-down definitions */
+#define GPIO_NOPULL                            0x00000000U   /*!< No Pull-up or Pull-down activation  */
+#define GPIO_PULLUP                            0x00000001U   /*!< Pull-up activation                  */
+#define GPIO_PULLDOWN                          0x00000002U   /*!< Pull-down activation                */
+
+/* GPIO speed definitions */
+#define GPIO_SPEED_FREQ_LOW                    0x00000000U  /*!< Low speed     */
+#define GPIO_SPEED_FREQ_MEDIUM                 0x00000001U  /*!< Medium speed  */
+#define GPIO_SPEED_FREQ_HIGH                   0x00000002U  /*!< High speed    */
+#define GPIO_SPEED_FREQ_VERY_HIGH              0x00000003U  /*!< Very high speed */
+
+/* GPIO alternate function definitions */
+#define GPIO_AF0_EVENTOUT      ((uint8_t)0x00)  /* AF0: EVENTOUT Alternate Function mapping  */
+#define GPIO_AF1_TIM1          ((uint8_t)0x01)  /* AF1: TIM1 Alternate Function mapping      */
+#define GPIO_AF1_TIM3          ((uint8_t)0x01)  /* AF1: TIM3 Alternate Function mapping      */
+#define GPIO_AF1_USART1        ((uint8_t)0x01)  /* AF1: USART1 Alternate Function mapping   */
+#define GPIO_AF1_USART2        ((uint8_t)0x01)  /* AF1: USART2 Alternate Function mapping   */
+
+#define GPIO_MODE_INPUT                0x00000000U   /*!< Input Floating Mode                   */
+#define GPIO_MODE_OUTPUT_PP            0x00000001U   /*!< Output Push Pull Mode                 */
+#define GPIO_MODE_OUTPUT_OD            0x00000011U   /*!< Output Open Drain Mode                */
+#define GPIO_MODE_AF_PP                0x00000002U   /*!< Alternate Function Push Pull Mode     */
+#define GPIO_MODE_AF_OD                0x00000012U   /*!< Alternate Function Open Drain Mode    */
+#define GPIO_MODE_ANALOG               0x00000003U   /*!< Analog Mode                           */
+
+#define GPIO_NOPULL                    0x00000000U   /*!< No Pull-up or Pull-down activation  */
+#define GPIO_PULLUP                    0x00000001U   /*!< Pull-up activation                  */
+#define GPIO_PULLDOWN                  0x00000002U   /*!< Pull-down activation                */
+
+#define GPIO_SPEED_FREQ_LOW            0x00000000U  /*!< Low speed     */
+#define GPIO_SPEED_FREQ_MEDIUM         0x00000001U  /*!< Medium speed  */
+#define GPIO_SPEED_FREQ_HIGH           0x00000002U  /*!< High speed    */
+#define GPIO_SPEED_FREQ_VERY_HIGH      0x00000003U  /*!< Very high speed */
+
 /******************  Bits definition for GPIO_MODER register  *****************/
 #define GPIO_MODER_MODE0_Pos           (0U)
 #define GPIO_MODER_MODE0_Msk           (0x3UL << GPIO_MODER_MODE0_Pos)          /*!< 0x00000003 */
@@ -369,10 +524,102 @@ typedef struct
 /*                             Reset and Clock Control                        */
 /*                                                                            */
 /******************************************************************************/
+/********************  Bit definition for TIM_CR1 register  ******************/
+#define TIM_CR1_CEN_Pos           (0U)
+#define TIM_CR1_CEN_Msk           (0x1UL << TIM_CR1_CEN_Pos)                   /*!< 0x00000001 */
+#define TIM_CR1_CEN               TIM_CR1_CEN_Msk                              /*!< Counter enable */
+
+/* TIM_CCER register definitions */
+#define TIM_CCER_CC1E_Pos         (0U)
+#define TIM_CCER_CC1E_Msk         (0x1UL << TIM_CCER_CC1E_Pos)                /*!< 0x00000001 */
+#define TIM_CCER_CC1E             TIM_CCER_CC1E_Msk                           /*!< Capture/Compare 1 output enable */
+#define TIM_CCER_CC2E_Pos         (4U)
+#define TIM_CCER_CC2E_Msk         (0x1UL << TIM_CCER_CC2E_Pos)                /*!< 0x00000010 */
+#define TIM_CCER_CC2E             TIM_CCER_CC2E_Msk                           /*!< Capture/Compare 2 output enable */
+#define TIM_CCER_CC3E_Pos         (8U)
+#define TIM_CCER_CC3E_Msk         (0x1UL << TIM_CCER_CC3E_Pos)                /*!< 0x00000100 */
+#define TIM_CCER_CC3E             TIM_CCER_CC3E_Msk                           /*!< Capture/Compare 3 output enable */
+#define TIM_CCER_CC4E_Pos         (12U)
+#define TIM_CCER_CC4E_Msk         (0x1UL << TIM_CCER_CC4E_Pos)                /*!< 0x00001000 */
+#define TIM_CCER_CC4E             TIM_CCER_CC4E_Msk                           /*!< Capture/Compare 4 output enable */
+#define TIM_CR1_DIR_Pos           (4U)
+#define TIM_CR1_DIR_Msk           (0x1UL << TIM_CR1_DIR_Pos)                   /*!< 0x00000010 */
+#define TIM_CR1_DIR               TIM_CR1_DIR_Msk                              /*!< Direction */
+#define TIM_CR1_CMS_Pos           (5U)
+#define TIM_CR1_CMS_Msk           (0x3UL << TIM_CR1_CMS_Pos)                   /*!< 0x00000060 */
+#define TIM_CR1_CMS               TIM_CR1_CMS_Msk                              /*!< CMS[1:0] bits (Center-aligned mode selection) */
+#define TIM_CR1_CMS_0             (0x1UL << TIM_CR1_CMS_Pos)                   /*!< 0x00000020 */
+#define TIM_CR1_CMS_1             (0x2UL << TIM_CR1_CMS_Pos)                   /*!< 0x00000040 */
+
+/********************  Bit definition for TIM_CCMR1 register  ****************/
+#define TIM_CCMR1_OC1M_Pos        (4U)
+#define TIM_CCMR1_OC1M_Msk        (0x7UL << TIM_CCMR1_OC1M_Pos)                /*!< 0x00000070 */
+#define TIM_CCMR1_OC1M            TIM_CCMR1_OC1M_Msk                           /*!< OC1M[2:0] bits (Output Compare 1 Mode) */
+#define TIM_CCMR1_OC1M_0          (0x1UL << TIM_CCMR1_OC1M_Pos)                /*!< 0x00000010 */
+#define TIM_CCMR1_OC1M_1          (0x2UL << TIM_CCMR1_OC1M_Pos)                /*!< 0x00000020 */
+#define TIM_CCMR1_OC1M_2          (0x4UL << TIM_CCMR1_OC1M_Pos)                /*!< 0x00000040 */
+
+/******************************************************************************/
 /********************  Bit definition for RCC_CR register  *******************/
 #define RCC_CR_HSION_Pos                     (8U)
 #define RCC_CR_HSION_Msk                     (0x1UL << RCC_CR_HSION_Pos)      /*!< 0x00000100 */
 #define RCC_CR_HSION                         RCC_CR_HSION_Msk                 /*!< Internal High Speed clock enable */
+
+/********************  Bit definition for RCC_CFGR register  ******************/
+#define RCC_CFGR_SW_Pos                      (0U)
+#define RCC_CFGR_SW_Msk                      (0x7UL << RCC_CFGR_SW_Pos)       /*!< 0x00000007 */
+#define RCC_CFGR_SW                          RCC_CFGR_SW_Msk                  /*!< SW[2:0] bits (System clock Switch) */
+#define RCC_CFGR_SW_HSI                      (0x01UL << RCC_CFGR_SW_Pos)      /*!< 0x00000001 */
+#define RCC_CFGR_SW_HSE                      (0x02UL << RCC_CFGR_SW_Pos)      /*!< 0x00000002 */
+#define RCC_CFGR_SW_PLL                      (0x03UL << RCC_CFGR_SW_Pos)      /*!< 0x00000003 */
+
+#define RCC_CFGR_SWS_Pos                     (3U)
+#define RCC_CFGR_SWS_Msk                     (0x7UL << RCC_CFGR_SWS_Pos)      /*!< 0x00000038 */
+#define RCC_CFGR_SWS                         RCC_CFGR_SWS_Msk                 /*!< SWS[2:0] bits (System Clock Switch Status) */
+#define RCC_CFGR_SWS_HSI                     (0x01UL << RCC_CFGR_SWS_Pos)     /*!< 0x00000008 */
+#define RCC_CFGR_SWS_HSE                     (0x02UL << RCC_CFGR_SWS_Pos)     /*!< 0x00000010 */
+#define RCC_CFGR_SWS_PLL                     (0x03UL << RCC_CFGR_SWS_Pos)     /*!< 0x00000018 */
+
+#define RCC_CFGR_HPRE_Pos                    (8U)
+#define RCC_CFGR_HPRE_Msk                    (0xFUL << RCC_CFGR_HPRE_Pos)     /*!< 0x00000F00 */
+#define RCC_CFGR_HPRE                        RCC_CFGR_HPRE_Msk                /*!< HPRE[3:0] bits (AHB prescaler) */
+
+/********************  Bit definition for RCC_PLLCFGR register  ***************/
+#define RCC_PLLCFGR_PLLSRC_Pos               (0U)
+#define RCC_PLLCFGR_PLLSRC_Msk               (0x3UL << RCC_PLLCFGR_PLLSRC_Pos) /*!< 0x00000003 */
+#define RCC_PLLCFGR_PLLSRC                   RCC_PLLCFGR_PLLSRC_Msk            /*!< PLL input source */
+
+#define RCC_PLLCFGR_PLLM_Pos                 (4U)
+#define RCC_PLLCFGR_PLLM_Msk                 (0x7UL << RCC_PLLCFGR_PLLM_Pos)  /*!< 0x00000070 */
+#define RCC_PLLCFGR_PLLM                     RCC_PLLCFGR_PLLM_Msk              /*!< PLLM[2:0] bits */
+
+#define RCC_PLLCFGR_PLLN_Pos                 (8U)
+#define RCC_PLLCFGR_PLLN_Msk                 (0x7FUL << RCC_PLLCFGR_PLLN_Pos) /*!< 0x00007F00 */
+#define RCC_PLLCFGR_PLLN                     RCC_PLLCFGR_PLLN_Msk              /*!< PLLN[6:0] bits */
+
+#define RCC_PLLCFGR_PLLPEN_Pos               (16U)
+#define RCC_PLLCFGR_PLLPEN_Msk               (0x1UL << RCC_PLLCFGR_PLLPEN_Pos) /*!< 0x00010000 */
+#define RCC_PLLCFGR_PLLPEN                   RCC_PLLCFGR_PLLPEN_Msk            /*!< PLLPCLK output enable */
+
+#define RCC_PLLCFGR_PLLP_Pos                 (17U)
+#define RCC_PLLCFGR_PLLP_Msk                 (0x1FUL << RCC_PLLCFGR_PLLP_Pos) /*!< 0x003E0000 */
+#define RCC_PLLCFGR_PLLP                     RCC_PLLCFGR_PLLP_Msk              /*!< PLLP[4:0] bits */
+
+#define RCC_PLLCFGR_PLLQEN_Pos               (24U)
+#define RCC_PLLCFGR_PLLQEN_Msk               (0x1UL << RCC_PLLCFGR_PLLQEN_Pos) /*!< 0x01000000 */
+#define RCC_PLLCFGR_PLLQEN                   RCC_PLLCFGR_PLLQEN_Msk            /*!< PLLQCLK output enable */
+
+#define RCC_PLLCFGR_PLLQ_Pos                 (25U)
+#define RCC_PLLCFGR_PLLQ_Msk                 (0x7UL << RCC_PLLCFGR_PLLQ_Pos)  /*!< 0x0E000000 */
+#define RCC_PLLCFGR_PLLQ                     RCC_PLLCFGR_PLLQ_Msk              /*!< PLLQ[2:0] bits */
+
+#define RCC_PLLCFGR_PLLREN_Pos               (28U)
+#define RCC_PLLCFGR_PLLREN_Msk               (0x1UL << RCC_PLLCFGR_PLLREN_Pos) /*!< 0x10000000 */
+#define RCC_PLLCFGR_PLLREN                   RCC_PLLCFGR_PLLREN_Msk            /*!< PLLRCLK output enable */
+
+#define RCC_PLLCFGR_PLLR_Pos                 (29U)
+#define RCC_PLLCFGR_PLLR_Msk                 (0x7UL << RCC_PLLCFGR_PLLR_Pos)  /*!< 0xE0000000 */
+#define RCC_PLLCFGR_PLLR                     RCC_PLLCFGR_PLLR_Msk              /*!< PLLR[2:0] bits */
 
 /**
   * @}
