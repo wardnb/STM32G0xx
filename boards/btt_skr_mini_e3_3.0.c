@@ -160,6 +160,25 @@ void board_init (void)
     
     // Start timer
     TIM2->CR1 |= TIM_CR1_CEN;
+    
+    // Configure TIM2_CH1 (PA0) for spindle encoder input capture
+    GPIO_Init.Pin = SPINDLE_ENCODER_PIN;
+    GPIO_Init.Mode = GPIO_MODE_AF_PP;
+    GPIO_Init.Pull = GPIO_PULLUP;  // Pull-up for encoder signal
+    GPIO_Init.Speed = GPIO_SPEED_FREQ_HIGH;
+    GPIO_Init.Alternate = GPIO_AF1_TIM2;  // TIM2_CH1 on PA0
+    HAL_GPIO_Init(SPINDLE_ENCODER_PORT, &GPIO_Init);
+    
+    // Configure TIM2 input capture for encoder
+    TIM2->CCMR1 |= (0x01 << 0);  // CC1S = 01 (input capture on TI1)
+    TIM2->CCMR1 |= (0x00 << 2);  // IC1PSC = 00 (no prescaler)
+    TIM2->CCMR1 |= (0x00 << 4);  // IC1F = 0000 (no filter)
+    TIM2->CCER |= TIM_CCER_CC1E;  // Enable input capture
+    TIM2->DIER |= TIM_DIER_CC1IE; // Enable capture interrupt
+    
+    // Enable TIM2 interrupt in NVIC
+    HAL_NVIC_SetPriority(TIM2_IRQn, 2, 0);
+    HAL_NVIC_EnableIRQ(TIM2_IRQn);
 #endif
 
 #ifdef I2C_PORT

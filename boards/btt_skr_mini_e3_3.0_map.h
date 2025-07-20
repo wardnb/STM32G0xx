@@ -148,6 +148,13 @@
 #define SPINDLE_DIRECTION_PIN   AUXOUTPUT1_PIN
 #endif
 
+// Spindle encoder for speed feedback and safety monitoring
+// Using PA0 (TIM2_CH1) for encoder input - available on EXP1 header
+#define SPINDLE_ENCODER_PORT    GPIOA
+#define SPINDLE_ENCODER_PIN     0       // PA0 - TIM2_CH1
+#define SPINDLE_ENCODER_TIMER   TIM2    // Same timer as PWM output
+#define SPINDLE_ENCODER_CHANNEL 1       // Input capture channel 1
+
 // Define flood and mist coolant enable output pins.
 #if COOLANT_ENABLE & COOLANT_FLOOD
 #define COOLANT_FLOOD_PORT      AUXOUTPUT3_PORT
