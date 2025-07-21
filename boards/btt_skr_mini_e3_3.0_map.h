@@ -226,3 +226,54 @@
 #define SD_MISO_PIN 6 //PA6
 #define SD_MOSI_PIN 7 //PA7
 #endif
+
+// Plugin-specific pin assignments
+
+// Fans plugin - Additional PWM outputs for cooling fans
+// Using available GPIO pins on EXP1 connector
+#if FANS_ENABLE
+#define FANS_FAN0_PORT          GPIOA
+#define FANS_FAN0_PIN           8       // PA8 - TIM1_CH1 (EXP1-7, PWM capable)
+#define FANS_FAN1_PORT          GPIOB
+#define FANS_FAN1_PIN           5       // PB5 - Available GPIO (EXP1-9)
+#endif
+
+// Encoder plugin - Additional encoder inputs for closed-loop control
+// Using available timer input capture pins
+#if ENCODER_ENABLE
+#define ENCODER0_PORT           GPIOA
+#define ENCODER0_PIN_A          0       // PA0 - Already defined as spindle encoder
+#define ENCODER0_PIN_B          1       // PA1 - Not used as encoder B (used for spindle PWM)
+// Note: Encoder plugin will share spindle encoder hardware for closed-loop spindle
+#endif
+
+// Plasma plugin - Torch height control and arc voltage monitoring
+#if PLASMA_ENABLE
+#define PLASMA_ARC_OK_PORT      GPIOB
+#define PLASMA_ARC_OK_PIN       6       // PB6 - Arc OK input (EXP1-8)
+#define PLASMA_THC_UP_PORT      GPIOB
+#define PLASMA_THC_UP_PIN       7       // PB7 - THC Up output
+#define PLASMA_THC_DOWN_PORT    GPIOA
+#define PLASMA_THC_DOWN_PIN     8       // PA8 - THC Down output (shared with FAN0 - mutually exclusive)
+#endif
+
+// Laser plugin - Laser power and safety controls
+#if LASER_ENABLE
+#define LASER_PWM_PORT          AUXOUTPUT0_PORT  // PA1 - Share spindle PWM (mutually exclusive with spindle)
+#define LASER_PWM_PIN           AUXOUTPUT0_PIN
+#define LASER_ENABLE_PORT       AUXOUTPUT2_PORT  // PC7 - Share spindle enable
+#define LASER_ENABLE_PIN        AUXOUTPUT2_PIN
+// Laser safety interlock using available input pin
+#define LASER_SAFETY_PORT       GPIOB
+#define LASER_SAFETY_PIN        6       // PB6 - Laser safety interlock (shared with plasma arc OK)
+#endif
+
+// Spindle plugin - Extended spindle control features
+// This plugin extends the basic spindle functionality already defined above
+// Uses existing spindle pins plus encoder for advanced features
+#if SPINDLE_ENABLE
+// Advanced spindle features use existing pin definitions plus encoder
+// Spindle encoder already defined above at PA0/TIM2_CH1
+#define SPINDLE_SYNC_PORT       AUXINPUT1_PORT   // PA1 - Spindle sync input (if not used for other purposes)
+#define SPINDLE_SYNC_PIN        AUXINPUT1_PIN
+#endif

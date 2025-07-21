@@ -44,7 +44,9 @@
 /**
   * @brief Configuration of the Cortex-M0+ Processor and Core Peripherals
    */
+#ifndef __CM0PLUS_REV
 #define __CM0PLUS_REV             0U       /*!< Core Revision r0p1                            */
+#endif
 #define __MPU_PRESENT             1U       /*!< STM32G0xx provides MPU                        */
 #define __VTOR_PRESENT            1U       /*!< Vector Table Register supported               */
 #define __NVIC_PRIO_BITS          2U       /*!< STM32G0xx uses 2 Bits for the Priority Levels */

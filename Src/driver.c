@@ -44,14 +44,14 @@ void settings_changed (settings_t *settings, settings_changed_flags_t changed);
 bool driver_setup (settings_t *settings);
 static void stepperWakeUp (void);
 static void stepperGoIdle (bool clear_signals);
-static void stepperEnable (axes_signals_t enable);
-static uint32_t stepperCyclesPerTick (uint32_t cycles_per_tick);
+static void stepperEnable (axes_signals_t enable, bool hold);
+static void stepperCyclesPerTick (uint32_t cycles_per_tick);
 static void stepperPulseStart (stepper_t *stepper);
 static void limitsEnable (bool on, axes_signals_t homing_cycle);
-static axes_signals_t limitsGetState (void);
+static limit_signals_t limitsGetState (void);
 static void coolantSetState (coolant_state_t mode);
 static coolant_state_t coolantGetState (void);
-static void probeConfigureInvertMask (bool is_probe_away);
+static void probeConfigureInvertMask (bool is_probe_away, bool probing);
 static probe_state_t probeGetState (void);
 static spindle_state_t spindleGetState (spindle_ptrs_t *spindle);
 static void spindleSetState (spindle_ptrs_t *spindle, spindle_state_t state, float rpm);
@@ -509,7 +509,7 @@ static void stepperGoIdle (bool clear_signals)
 }
 
 // Phase 2: Enhanced stepper enable with backlash compensation
-static void stepperEnable (axes_signals_t enable)
+static void stepperEnable (axes_signals_t enable, bool hold)
 {
     // Enable/disable individual stepper motors
     
@@ -542,7 +542,7 @@ static void stepperEnable (axes_signals_t enable)
     }
 }
 
-static uint32_t stepperCyclesPerTick (uint32_t cycles_per_tick)
+static void stepperCyclesPerTick (uint32_t cycles_per_tick)
 {
     // Configure TIM3 for stepper timing (separate from TIM2 spindle functions)
     
@@ -570,7 +570,7 @@ static uint32_t stepperCyclesPerTick (uint32_t cycles_per_tick)
     
     // Timer will be started by stepperPulseStart when needed
     
-    return cycles_per_tick;
+    // Timer configured for specified cycles per tick
 }
 
 // Phase 2: Apply backlash compensation
@@ -723,7 +723,7 @@ static axes_signals_t limitsGetRawState(void)
     return signals;
 }
 
-static axes_signals_t limitsGetState (void)
+static limit_signals_t limitsGetState (void)
 {
     uint32_t current_time = uwTick;
     
@@ -751,7 +751,13 @@ static axes_signals_t limitsGetState (void)
         safety_state.last_read_time = current_time;
     }
     
-    return safety_state.debounced_state;
+    // Convert axes_signals_t to limit_signals_t for HAL compatibility
+    limit_signals_t limit_state = {0};
+    limit_state.min.x = safety_state.debounced_state.x;
+    limit_state.min.y = safety_state.debounced_state.y;
+    limit_state.min.z = safety_state.debounced_state.z;
+    
+    return limit_state;
 }
 
 static void coolantSetState (coolant_state_t mode)
@@ -786,7 +792,7 @@ static coolant_state_t coolantGetState (void)
     return state;
 }
 
-static void probeConfigureInvertMask (bool is_probe_away)
+static void probeConfigureInvertMask (bool is_probe_away, bool probing)
 {
     probe_invert = is_probe_away;
     
@@ -1218,17 +1224,9 @@ void EXTI0_1_IRQHandler(void)
     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_1);
     
-    // Convert axes_signals_t to limit_signals_t and call callback
+    // Get limit state and call callback
     if (hal.limits.interrupt_callback) {
-        axes_signals_t axes_state = limitsGetState();
-        limit_signals_t limit_state = {0};
-        
-        // Convert axes signals to limit signals
-        limit_state.min.x = axes_state.x;
-        limit_state.min.y = axes_state.y; 
-        limit_state.min.z = axes_state.z;
-        // Max limits not used on this board (dual endstop systems would use these)
-        
+        limit_signals_t limit_state = limitsGetState();
         hal.limits.interrupt_callback(limit_state);
     }
 }
@@ -1240,17 +1238,9 @@ void EXTI2_3_IRQHandler(void)
     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_2);
     HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3);
     
-    // Convert axes_signals_t to limit_signals_t and call callback
+    // Get limit state and call callback
     if (hal.limits.interrupt_callback) {
-        axes_signals_t axes_state = limitsGetState();
-        limit_signals_t limit_state = {0};
-        
-        // Convert axes signals to limit signals
-        limit_state.min.x = axes_state.x;
-        limit_state.min.y = axes_state.y; 
-        limit_state.min.z = axes_state.z;
-        // Max limits not used on this board
-        
+        limit_signals_t limit_state = limitsGetState();
         hal.limits.interrupt_callback(limit_state);
     }
     

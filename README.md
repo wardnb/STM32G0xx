@@ -17,6 +17,7 @@ A **fully-featured grblHAL driver** for STM32G0 series processors, specifically 
 - **Complete motion control** - Acceleration planning and smooth trajectories
 - **TMC2209 stepper drivers** - UART configuration with advanced features
 - **Hardware interrupts** - Limit switches and control inputs
+- **🆕 Plugin Architecture** - Modular extensions for specialized functionality
 
 ### Implemented Features ✅
 - **Limit switches** - Hardware debouncing and interrupt-driven
@@ -27,7 +28,19 @@ A **fully-featured grblHAL driver** for STM32G0 series processors, specifically 
 - **Control inputs** - Feed hold, cycle start, reset buttons
 - **I2C support** - For accessories and expansion
 - **Backlash compensation** - Improved accuracy on all axes
-- **Advanced safety** - Thermal monitoring and spindle feedback
+- **🆕 Advanced safety** - Interrupt-driven E-stop, feed hold, cycle start, safety door
+- **🆕 Professional code quality** - Clean compilation with minimal warnings
+
+### 🚀 NEW: Plugin Support ✅
+- **🔧 Spindle Plugin** - Advanced spindle control beyond basic PWM
+- **🌀 Fans Plugin** - M106/M107 cooling fan control for enclosed CNC
+- **🔄 Encoder Plugin** - Closed-loop feedback for precision machining
+- **⚡ Plasma Plugin** - Torch height control (THC) for plasma cutting
+- **💡 Laser Plugin** - Laser-specific safety and control features
+- **📦 EEPROM Plugin** - Non-volatile settings storage
+- **🎮 Keypad Plugin** - I2C control panel support
+- **📊 Odometer Plugin** - Usage tracking and maintenance scheduling
+- **💾 SD Card Plugin** - File storage and G-code streaming
 
 ### gSender Compatibility ✅
 - Full G-code support (G0, G1, G2, G3, etc.)
@@ -38,13 +51,17 @@ A **fully-featured grblHAL driver** for STM32G0 series processors, specifically 
 
 ## Firmware Downloads
 
+**⚠️ IMPORTANT: v1.0.0-beta2 is COMPLETELY UNTESTED - Use at your own risk!**
+
 **Pre-built firmware binaries are available:**
-- [`firmware_usb_ultimate.bin`](firmware/firmware_usb_ultimate.bin) - **NEW**: Ultimate USB + UART (RECOMMENDED)
-- [`firmware_uart_ultimate.bin`](firmware/firmware_uart_ultimate.bin) - **NEW**: Ultimate UART + USB Management
-- [`firmware_usb_bulletproof.bin`](firmware/firmware_usb_bulletproof.bin) - Bulletproof USB (stable)
-- [`firmware_uart_bulletproof.bin`](firmware/firmware_uart_bulletproof.bin) - Bulletproof UART (stable)
-- [`firmware_usb_complete.bin`](firmware/firmware_usb_complete.bin) - USB connection (basic)
-- [`firmware_uart_complete.bin`](firmware/firmware_uart_complete.bin) - UART connection (basic)
+- [`firmware_usb_v1.0.0-beta2.bin`](firmware/firmware_usb_v1.0.0-beta2.bin) - **🚀 NEW**: Plugin-enabled (UNTESTED)
+- [`firmware_uart_v1.0.0-beta2.bin`](firmware/firmware_uart_v1.0.0-beta2.bin) - **🚀 NEW**: Plugin-enabled (UNTESTED)
+- [`firmware_usb_v0.9.0.bin`](firmware/firmware_usb_v0.9.0.bin) - **Recommended**: Stable, tested features
+- [`firmware_uart_v0.9.0.bin`](firmware/firmware_uart_v0.9.0.bin) - **Recommended**: Stable, tested features
+
+**📋 Version Comparison:**
+- **v1.0.0-beta2**: All plugins + clean compilation + advanced safety (⚠️ **UNTESTED**)
+- **v0.9.0**: Core features only, stable and reliable
 
 ## Testing & Configuration Tools
 

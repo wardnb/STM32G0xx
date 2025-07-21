@@ -24,6 +24,9 @@
 #include "usb_serial.h"
 #include "grbl/protocol.h"
 
+// Forward declaration to avoid HAL include issues
+extern uint32_t HAL_GetTick(void);
+
 #if USB_SERIAL_CDC
 #include "usb_device.h"
 #include "usbd_cdc_if.h"
@@ -303,7 +306,7 @@ static void usbWrite (const char *data, uint16_t length)
 //
 // Flushes the USB serial output stream
 //
-static void usbTxFlush(void)
+__attribute__((unused)) static void usbTxFlush(void)
 {
     usbUpdateConnectionState();
     usbFlushTxBuffer();
@@ -394,7 +397,7 @@ void usbBufferInput(uint8_t *data, uint32_t length)
 //
 // "dummy" version of stream buffering function
 //
-static uint16_t usbRxFree (void)
+__attribute__((unused)) static uint16_t usbRxFree (void)
 {
     return (USB_SER_RX_BUFFER_SIZE - 1) - usbRxCount();
 }

@@ -81,8 +81,7 @@ static bool serialTxBufferPutC(char c);
 static void serialFlushTxBuffer(void);
 
 static stream_block_tx_buffer_t txbuf = {0};
-static char rxbuf[RX_BUFFER_SIZE];
-static stream_rx_buffer_t rxbuffer = {0}, rxbackup;
+static stream_rx_buffer_t rxbuffer = {0};
 static serial_tx_buffer_t tx_buffer = {0};
 static volatile serial_state_t serial_state = {0};
 

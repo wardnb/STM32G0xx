@@ -16,7 +16,8 @@ Pre-compiled firmware binaries for BTT SKR Mini E3 v3.0 board (STM32G0B1RET6).
 ## Versioning Scheme
 
 This project follows [Semantic Versioning](https://semver.org/):
-- **v1.0.0-beta1** - Feature complete, **UNTESTED** hardware implementation (current)
+- **v1.0.0-beta2** - Plugin-enabled + professional code quality, **UNTESTED** (current)
+- **v1.0.0-beta1** - Feature complete, **UNTESTED** hardware implementation
 - **v1.0.0-rc1** - Release candidate after successful hardware testing
 - **v1.0.0** - First stable release after field testing and validation
 - **v1.x.x** - Future stable releases and features
@@ -25,9 +26,9 @@ This project follows [Semantic Versioning](https://semver.org/):
 
 ## Available Firmware Versions
 
-### ⚠️ **v1.0.0-beta1 - UNTESTED FEATURE COMPLETE FIRMWARE** (LATEST - USE AT YOUR OWN RISK)
+### ⚠️ **v1.0.0-beta2 - PLUGIN-ENABLED UNTESTED FIRMWARE** (LATEST - USE AT YOUR OWN RISK)
 
-#### `firmware_usb_v1.0.0-beta1.bin` - **⚠️ UNTESTED COMPLETE CNC CONTROLLER (USB)**
+#### `firmware_usb_v1.0.0-beta2.bin` - **⚠️ UNTESTED PLUGIN-ENABLED CNC CONTROLLER (USB)**
 - **Communication**: Bulletproof USB CDC via Micro USB port  
 - **Motion Control**: ✅ **FULLY IMPLEMENTED** - Real-time TIM3 step generation
 - **I/O Systems**: ✅ **100% COMPLETE** - All stepper, coolant, limit, probe I/O
@@ -37,18 +38,28 @@ This project follows [Semantic Versioning](https://semver.org/):
   - **Feed Hold/Cycle Start**: Interrupt-driven controls (PC13/PC12)
   - **Safety Door**: Door ajar detection with real-time response (PC3)
   - **Response Time**: Microsecond-level safety interrupt processing
+- **🚀 NEW Plugin Support**: ✅ **COMPREHENSIVE PLUGIN ECOSYSTEM**
+  - **Spindle Plugin**: Advanced spindle control beyond basic PWM
+  - **Fans Plugin**: M106/M107 cooling fan control (PA8 PWM)
+  - **Encoder Plugin**: Closed-loop feedback for precision
+  - **Plasma Plugin**: Torch height control for plasma cutting
+  - **Laser Plugin**: Laser-specific safety and control features
+  - **SD Card Plugin**: File storage and G-code streaming
+- **🏆 Code Quality**: ✅ **PROFESSIONAL GRADE** - Clean compilation, minimal warnings
 - **Timer Architecture**: TIM3 stepper + TIM2 spindle PWM/encoder (no conflicts)
 - **Real-time Performance**: Professional-grade interrupt handling and timing
 - **⚠️ Status**: 🟡 **COMPLETELY UNTESTED** - **USE AT YOUR OWN RISK FOR TESTING ONLY**
-- **Best for**: **EXPERIENCED DEVELOPERS** - **HARDWARE TESTING AND VALIDATION**
+- **Best for**: **EXPERIENCED DEVELOPERS** - **PLUGIN TESTING AND VALIDATION**
 
-#### `firmware_uart_v1.0.0-beta1.bin` - **⚠️ UNTESTED COMPLETE CNC CONTROLLER (UART)**
+#### `firmware_uart_v1.0.0-beta2.bin` - **⚠️ UNTESTED PLUGIN-ENABLED CNC CONTROLLER (UART)**
 - **Communication**: UART via TFT connector (PA9/PA10) at 115200 baud
 - **Motion Control**: ✅ **FULLY IMPLEMENTED** - Real-time step generation 
 - **All Systems**: ✅ **100% FUNCTIONAL** - Spindle + limits + I/O complete
 - **🆕 Safety Systems**: ✅ **100% COMPLETE** - Same safety features as USB version
+- **🚀 Plugin Support**: ✅ **ALL PLUGINS ENABLED** - Same plugin features as USB version
+- **🏆 Code Quality**: ✅ **PROFESSIONAL GRADE** - Clean compilation, minimal warnings
 - **⚠️ Status**: 🟡 **COMPLETELY UNTESTED** - **USE AT YOUR OWN RISK FOR TESTING ONLY**
-- **Best for**: **EXPERIENCED DEVELOPERS** - **HARDWARE TESTING AND VALIDATION**
+- **Best for**: **EXPERIENCED DEVELOPERS** - **PLUGIN TESTING AND VALIDATION**
 
 ### 📦 **v0.9.0 - FEATURE COMPLETE CNC CONTROLLER** (Previous Release)
 
@@ -129,7 +140,7 @@ This project follows [Semantic Versioning](https://semver.org/):
    - Format as FAT32 (not exFAT or NTFS)
 
 2. **Copy Firmware**:
-   - ⚠️ **TESTING ONLY**: Choose `firmware_usb_v1.0.0-beta1.bin` (UNTESTED - USE AT YOUR OWN RISK)
+   - ⚠️ **PLUGIN TESTING**: Choose `firmware_usb_v1.0.0-beta2.bin` (UNTESTED - USE AT YOUR OWN RISK)
    - ✅ **STABLE USE**: Choose `firmware_usb_v0.9.0.bin` (Tested and working)
    - Copy to SD card root directory
    - **RENAME to exactly**: `firmware.bin`
