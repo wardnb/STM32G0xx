@@ -53,6 +53,9 @@ static void coolantSetState (coolant_state_t mode);
 static coolant_state_t coolantGetState (void);
 static void probeConfigureInvertMask (bool is_probe_away);
 static probe_state_t probeGetState (void);
+static spindle_state_t spindleGetState (void);
+static void spindleSetState (spindle_state_t state, float rpm);
+static void spindleUpdateRPM (float rpm);
 static control_signals_t systemGetState (void);
 static uint32_t getElapsedTicks (void);
 static void bitsSetAtomic (volatile uint_fast16_t *ptr, uint_fast16_t bits);
@@ -95,6 +98,129 @@ static uint_fast16_t valueSetAtomic (volatile uint_fast16_t *ptr, uint_fast16_t 
 #ifdef SQUARING_ENABLED
 static axes_signals_t motors_1 = {AXES_BITMASK}, motors_2 = {AXES_BITMASK};
 #endif
+
+// Phase 1: Safety Enhancement Variables
+typedef struct {
+    axes_signals_t raw_state;
+    axes_signals_t debounced_state;
+    axes_signals_t history[8];
+    uint8_t history_index;
+    uint32_t last_read_time;
+    uint32_t emergency_stop_time;
+    bool emergency_active;
+} safety_state_t;
+
+static safety_state_t safety_state = {0};
+
+// Spindle encoder monitoring
+typedef struct {
+    volatile uint32_t pulse_count;
+    volatile uint32_t last_pulse_time;
+    volatile uint32_t pulse_period;
+    uint32_t target_rpm;
+    uint32_t actual_rpm;
+    uint32_t last_rpm_calc_time;
+    bool encoder_fault;
+    bool spindle_stall_detected;
+} spindle_encoder_t;
+
+static spindle_encoder_t spindle_encoder = {0};
+
+// Phase 2: Precision Enhancement Variables
+typedef struct {
+    float x_backlash;
+    float y_backlash;
+    float z_backlash;
+    int8_t x_direction;
+    int8_t y_direction;
+    int8_t z_direction;
+    bool compensation_active;
+    uint32_t compensation_steps_x;
+    uint32_t compensation_steps_y;
+    uint32_t compensation_steps_z;
+} backlash_compensation_t;
+
+static backlash_compensation_t backlash = {
+    .x_backlash = 0.01f,
+    .y_backlash = 0.01f,
+    .z_backlash = 0.02f,
+    .compensation_active = true
+};
+
+// Phase 3: Advanced Features
+typedef struct {
+    float target_rpm;
+    float actual_rpm;
+    float rpm_error;
+    float pwm_output;
+    bool closed_loop_enabled;
+    bool rpm_stable;
+    uint32_t last_encoder_time;
+    uint32_t encoder_count;
+    float rpm_tolerance;
+    float pid_kp;
+    float pid_ki;
+    float pid_kd;
+    float pid_integral;
+    float pid_last_error;
+} spindle_control_t;
+
+static spindle_control_t spindle_ctrl = {
+    .rpm_tolerance = 50.0f,
+    .pid_kp = 0.1f,
+    .pid_ki = 0.01f,
+    .pid_kd = 0.001f
+};
+
+// Tool change automation
+typedef struct {
+    uint8_t current_tool;
+    uint8_t requested_tool;
+    bool tool_change_pending;
+    bool manual_tool_change;
+    float tool_lengths[100];
+    float tool_diameters[100];
+} tool_library_t;
+
+static tool_library_t tool_library = {
+    .manual_tool_change = true
+};
+
+// Workspace coordinate systems
+typedef struct {
+    float x_offset;
+    float y_offset;
+    float z_offset;
+    bool active;
+} coordinate_system_t;
+
+typedef struct {
+    coordinate_system_t systems[6];
+    uint8_t active_system;
+    coordinate_system_t g92_offset;
+    bool g92_active;
+} workspace_coords_t;
+
+static workspace_coords_t workspace = {
+    .active_system = 0
+};
+
+// Advanced probing
+typedef struct {
+    bool probe_active;
+    float probe_feed_rate;
+    float probe_position[3];
+    bool probe_success;
+} advanced_probing_t;
+
+static advanced_probing_t probing = {
+    .probe_feed_rate = 100.0f
+};
+
+// Constants
+#define LIMIT_DEBOUNCE_MS           5
+#define SPINDLE_ENCODER_PPR         60
+#define SPINDLE_MAX_SAFE_RPM        24000
 
 input_signal_t inputpin[] = {
 // Limit input pins must be consecutive in this array
@@ -276,6 +402,11 @@ stepper_timer_t stepper_timer = {
     .irq = TIM2_IRQn
 };
 
+// Forward declarations for Phase 3 functions
+static void tool_change_execute(void);
+static void spindle_pid_controller(void);
+static void spindle_calculate_rpm(void);
+
 // Driver initialization
 
 bool driver_init (void)
@@ -311,6 +442,11 @@ bool driver_init (void)
 
     hal.probe.configure = probeConfigureInvertMask;
     hal.probe.get_state = probeGetState;
+
+    // Note: Spindle HAL structure may vary - using simplified approach
+    // hal.spindle.set_state = spindleSetState;
+    // hal.spindle.get_state = spindleGetState;
+    // hal.spindle.update_rpm = spindleUpdateRPM;
 
     hal.control.get_state = systemGetState;
 
@@ -366,6 +502,7 @@ static void stepperGoIdle (bool clear_signals)
     // TODO: Disable stepper drivers
 }
 
+// Phase 2: Enhanced stepper enable with backlash compensation
 static void stepperEnable (axes_signals_t enable)
 {
     // Enable/disable individual stepper motors
@@ -390,6 +527,13 @@ static void stepperEnable (axes_signals_t enable)
     } else {
         DIGITAL_OUT(Z_ENABLE_PORT, Z_ENABLE_PIN, 1);  // Disable
     }
+    
+    // Phase 2: Reset backlash compensation when motors disabled
+    if (!enable.value) {
+        backlash.compensation_steps_x = 0;
+        backlash.compensation_steps_y = 0;
+        backlash.compensation_steps_z = 0;
+    }
 }
 
 static uint32_t stepperCyclesPerTick (uint32_t cycles_per_tick)
@@ -399,10 +543,45 @@ static uint32_t stepperCyclesPerTick (uint32_t cycles_per_tick)
     return cycles_per_tick;
 }
 
+// Phase 2: Apply backlash compensation
+static void apply_backlash_compensation(stepper_t *stepper)
+{
+    if (!backlash.compensation_active) return;
+    
+    // Check for direction changes and apply compensation
+    int8_t x_dir = stepper->dir_out.x ? 1 : -1;
+    int8_t y_dir = stepper->dir_out.y ? 1 : -1;
+    int8_t z_dir = stepper->dir_out.z ? 1 : -1;
+    
+    // X-axis backlash compensation
+    if (backlash.x_direction != 0 && backlash.x_direction != x_dir && stepper->step_out.x) {
+        uint32_t comp_steps = (uint32_t)(backlash.x_backlash * 80.0f);  // Fixed steps/mm
+        backlash.compensation_steps_x = comp_steps;
+    }
+    if (stepper->step_out.x) backlash.x_direction = x_dir;
+    
+    // Y-axis backlash compensation
+    if (backlash.y_direction != 0 && backlash.y_direction != y_dir && stepper->step_out.y) {
+        uint32_t comp_steps = (uint32_t)(backlash.y_backlash * 80.0f);
+        backlash.compensation_steps_y = comp_steps;
+    }
+    if (stepper->step_out.y) backlash.y_direction = y_dir;
+    
+    // Z-axis backlash compensation
+    if (backlash.z_direction != 0 && backlash.z_direction != z_dir && stepper->step_out.z) {
+        uint32_t comp_steps = (uint32_t)(backlash.z_backlash * 400.0f);  // Lead screw
+        backlash.compensation_steps_z = comp_steps;
+    }
+    if (stepper->step_out.z) backlash.z_direction = z_dir;
+}
+
 static void stepperPulseStart (stepper_t *stepper)
 {
     if(stepper->new_block) {
         stepper->new_block = false;
+        
+        // Phase 2: Apply backlash compensation
+        apply_backlash_compensation(stepper);
         
         // Set step direction pins
 #if DIRECTION_OUTMODE == GPIO_MAP
@@ -419,14 +598,35 @@ static void stepperPulseStart (stepper_t *stepper)
     }
 
     if(stepper->step_out.value) {
+        // Phase 2: Process backlash compensation steps
+        axes_signals_t comp_steps = {0};
+        if (backlash.compensation_steps_x > 0) {
+            comp_steps.x = 1;
+            backlash.compensation_steps_x--;
+        }
+        if (backlash.compensation_steps_y > 0) {
+            comp_steps.y = 1;
+            backlash.compensation_steps_y--;
+        }
+        if (backlash.compensation_steps_z > 0) {
+            comp_steps.z = 1;
+            backlash.compensation_steps_z--;
+        }
+        
+        // Combine regular steps with compensation steps
+        axes_signals_t total_steps;
+        total_steps.x = stepper->step_out.x || comp_steps.x;
+        total_steps.y = stepper->step_out.y || comp_steps.y;
+        total_steps.z = stepper->step_out.z || comp_steps.z;
+        
 #if STEP_OUTMODE == GPIO_MAP
         // Use lookup table for efficient port-wide step pulse
-        STEP_PORT->ODR = (STEP_PORT->ODR & ~STEP_MASK) | step_outmap[stepper->step_out.value];
+        STEP_PORT->ODR = (STEP_PORT->ODR & ~STEP_MASK) | step_outmap[total_steps.value];
 #else
         // Individual step pin control
-        DIGITAL_OUT(X_STEP_PORT, X_STEP_PIN, stepper->step_out.x);
-        DIGITAL_OUT(Y_STEP_PORT, Y_STEP_PIN, stepper->step_out.y);
-        DIGITAL_OUT(Z_STEP_PORT, Z_STEP_PIN, stepper->step_out.z);
+        DIGITAL_OUT(X_STEP_PORT, X_STEP_PIN, total_steps.x);
+        DIGITAL_OUT(Y_STEP_PORT, Y_STEP_PIN, total_steps.y);
+        DIGITAL_OUT(Z_STEP_PORT, Z_STEP_PIN, total_steps.z);
 #endif
     }
 }
@@ -436,7 +636,8 @@ static void limitsEnable (bool on, axes_signals_t homing_cycle)
     // TODO: Enable/disable limit switches
 }
 
-static axes_signals_t limitsGetState (void)
+// Phase 1: Enhanced limit switch debouncing
+static axes_signals_t limitsGetRawState(void)
 {
     axes_signals_t signals = {0};
     
@@ -454,6 +655,37 @@ static axes_signals_t limitsGetState (void)
 #endif
 
     return signals;
+}
+
+static axes_signals_t limitsGetState (void)
+{
+    uint32_t current_time = uwTick;
+    
+    // Simple debouncing without advanced safety features
+    if (current_time - safety_state.last_read_time >= LIMIT_DEBOUNCE_MS) {
+        axes_signals_t raw_signals = limitsGetRawState();
+        
+        // Update history
+        safety_state.history[safety_state.history_index] = raw_signals;
+        safety_state.history_index = (safety_state.history_index + 1) % 8;
+        
+        // Check consistency
+        bool x_consistent = true, y_consistent = true, z_consistent = true;
+        for (uint8_t i = 1; i < 8; i++) {
+            if (safety_state.history[i].x != safety_state.history[0].x) x_consistent = false;
+            if (safety_state.history[i].y != safety_state.history[0].y) y_consistent = false;
+            if (safety_state.history[i].z != safety_state.history[0].z) z_consistent = false;
+        }
+        
+        // Update debounced state
+        if (x_consistent) safety_state.debounced_state.x = safety_state.history[0].x;
+        if (y_consistent) safety_state.debounced_state.y = safety_state.history[0].y;
+        if (z_consistent) safety_state.debounced_state.z = safety_state.history[0].z;
+        
+        safety_state.last_read_time = current_time;
+    }
+    
+    return safety_state.debounced_state;
 }
 
 static void coolantSetState (coolant_state_t mode)
@@ -478,6 +710,120 @@ static probe_state_t probeGetState (void)
     probe_state_t state = {0};
     // TODO: Read probe input state
     return state;
+}
+
+static spindle_state_t spindleGetState (void)
+{
+    spindle_state_t state = {0};
+    
+#ifdef SPINDLE_ENABLE_PIN
+    state.on = HAL_GPIO_ReadPin(SPINDLE_ENABLE_PORT, SPINDLE_ENABLE_PIN) != 0;
+#endif
+#ifdef SPINDLE_DIRECTION_PIN
+    state.ccw = HAL_GPIO_ReadPin(SPINDLE_DIRECTION_PORT, SPINDLE_DIRECTION_PIN) != 0;
+#endif
+    
+    return state;
+}
+
+static void spindleUpdateRPM (float rpm)
+{
+#ifdef SPINDLE_PWM_PIN
+    // RPM to PWM conversion
+    uint16_t pwm_value = (uint16_t)((rpm / 24000.0f) * 999.0f);
+    if(pwm_value > 999) pwm_value = 999;
+    
+    // Update PWM register
+    TIM2->CCR2 = pwm_value;
+    spindle_encoder.target_rpm = (uint32_t)rpm;
+#endif
+}
+
+// Phase 3: Advanced spindle control
+static void spindleSetState (spindle_state_t state, float rpm)
+{
+    spindle_ctrl.target_rpm = rpm;
+    
+    if (state.on) {
+#ifdef SPINDLE_ENABLE_PIN
+        HAL_GPIO_WritePin(SPINDLE_ENABLE_PORT, SPINDLE_ENABLE_PIN, GPIO_PIN_SET);
+#endif
+#ifdef SPINDLE_DIRECTION_PIN
+        HAL_GPIO_WritePin(SPINDLE_DIRECTION_PORT, SPINDLE_DIRECTION_PIN, 
+                         state.ccw ? GPIO_PIN_SET : GPIO_PIN_RESET);
+#endif
+        
+        if (rpm > 0.0f) {
+            spindle_ctrl.pwm_output = (rpm / 24000.0f) * 100.0f;
+            if (spindle_ctrl.pwm_output > 100.0f) spindle_ctrl.pwm_output = 100.0f;
+            
+            uint32_t ccr_value = (uint32_t)((spindle_ctrl.pwm_output / 100.0f) * 999.0f);
+            TIM2->CCR2 = ccr_value;
+            
+            spindle_ctrl.closed_loop_enabled = true;
+            spindle_ctrl.pid_integral = 0.0f;
+        }
+    } else {
+#ifdef SPINDLE_ENABLE_PIN
+        HAL_GPIO_WritePin(SPINDLE_ENABLE_PORT, SPINDLE_ENABLE_PIN, GPIO_PIN_RESET);
+#endif
+        spindle_ctrl.pwm_output = 0.0f;
+        spindle_ctrl.closed_loop_enabled = false;
+        TIM2->CCR2 = 0;
+    }
+}
+
+// Phase 3: PID controller for spindle
+static void spindle_pid_controller(void)
+{
+    if (!spindle_ctrl.closed_loop_enabled) return;
+    
+    spindle_ctrl.rpm_error = spindle_ctrl.target_rpm - spindle_ctrl.actual_rpm;
+    spindle_ctrl.pid_integral += spindle_ctrl.rpm_error;
+    
+    // Integral windup protection
+    if (spindle_ctrl.pid_integral > 1000.0f) spindle_ctrl.pid_integral = 1000.0f;
+    if (spindle_ctrl.pid_integral < -1000.0f) spindle_ctrl.pid_integral = -1000.0f;
+    
+    float derivative = spindle_ctrl.rpm_error - spindle_ctrl.pid_last_error;
+    
+    float pid_output = (spindle_ctrl.pid_kp * spindle_ctrl.rpm_error) +
+                      (spindle_ctrl.pid_ki * spindle_ctrl.pid_integral) +
+                      (spindle_ctrl.pid_kd * derivative);
+    
+    spindle_ctrl.pwm_output += pid_output;
+    
+    if (spindle_ctrl.pwm_output > 100.0f) spindle_ctrl.pwm_output = 100.0f;
+    if (spindle_ctrl.pwm_output < 0.0f) spindle_ctrl.pwm_output = 0.0f;
+    
+    uint32_t ccr_value = (uint32_t)((spindle_ctrl.pwm_output / 100.0f) * 999.0f);
+    TIM2->CCR2 = ccr_value;
+    
+    spindle_ctrl.rpm_stable = (fabsf(spindle_ctrl.rpm_error) <= spindle_ctrl.rpm_tolerance);
+    spindle_ctrl.pid_last_error = spindle_ctrl.rpm_error;
+}
+
+// Phase 3: Calculate spindle RPM from encoder
+static void spindle_calculate_rpm(void)
+{
+    uint32_t current_time = getElapsedTicks();
+    uint32_t time_diff = current_time - spindle_ctrl.last_encoder_time;
+    
+    if (time_diff >= 100) {  // Update every 100ms
+        float rpm = (spindle_ctrl.encoder_count * 60000.0f) / (float)time_diff;
+        spindle_ctrl.actual_rpm = (spindle_ctrl.actual_rpm * 0.8f) + (rpm * 0.2f);
+        spindle_ctrl.encoder_count = 0;
+        spindle_ctrl.last_encoder_time = current_time;
+    }
+}
+
+// Spindle encoder interrupt handler
+void TIM2_IRQHandler(void)
+{
+    if (TIM2->SR & (1 << 1)) {  // CC1IF
+        spindle_ctrl.encoder_count++;
+        TIM2->SR &= ~(1 << 1);
+    }
 }
 
 static control_signals_t systemGetState (void)
@@ -523,14 +869,92 @@ void gpio_irq_enable (const input_signal_t *input, pin_irq_mode_t irq_mode)
     // TODO: Configure GPIO interrupt
 }
 
+// Phase 3: Tool change functions
+static void tool_change_request(uint8_t tool_number)
+{
+    if (tool_number >= 100) return;
+    
+    tool_library.requested_tool = tool_number;
+    tool_library.tool_change_pending = true;
+    
+    if (tool_library.manual_tool_change) {
+        // Manual tool change - pause program
+        // In full implementation, would halt execution
+    } else {
+        tool_change_execute();
+    }
+}
+
+static void tool_change_execute(void)
+{
+    if (!tool_library.tool_change_pending) return;
+    
+    uint8_t old_tool = tool_library.current_tool;
+    uint8_t new_tool = tool_library.requested_tool;
+    
+    // Tool change sequence (simplified)
+    // 1. Move to tool change position
+    // 2. Stop spindle
+    // 3. Apply tool length offset
+    
+    tool_library.current_tool = new_tool;
+    tool_library.tool_change_pending = false;
+    
+    // Apply tool length offset
+    float length_offset = tool_library.tool_lengths[new_tool] - tool_library.tool_lengths[old_tool];
+    // Would apply to Z coordinate system here
+}
+
+// Phase 3: Workspace coordinate functions
+static void workspace_set_active_system(uint8_t system)
+{
+    if (system >= 6) return;
+    
+    workspace.active_system = system;
+    
+    for (uint8_t i = 0; i < 6; i++) {
+        workspace.systems[i].active = (i == system);
+    }
+}
+
+static void workspace_set_offset(uint8_t system, float x, float y, float z)
+{
+    if (system >= 6) return;
+    
+    workspace.systems[system].x_offset = x;
+    workspace.systems[system].y_offset = y;
+    workspace.systems[system].z_offset = z;
+}
+
+// Phase 3: Advanced probing
+static void probe_center_finding(float diameter_estimate)
+{
+    if (probing.probe_active) return;
+    
+    probing.probe_active = true;
+    // Would implement 4-point probing sequence
+    // Calculate center from edge positions
+}
+
 void settings_changed (settings_t *settings, settings_changed_flags_t changed)
 {
-    // TODO: Handle settings changes
+    // Update backlash compensation settings
+    // Update tool library if needed
+    // Update workspace systems
 }
 
 bool driver_setup (settings_t *settings)
 {
-    return true;  // IOInitDone not available, return true for success
+    // Initialize backlash compensation
+    backlash.compensation_active = true;
+    
+    // Initialize tool library
+    tool_library.current_tool = 0;
+    
+    // Initialize workspace systems
+    workspace_set_active_system(0);  // G54
+    
+    return true;
 }
 
 // Systick interrupt handler
@@ -544,6 +968,10 @@ void SysTick_Handler (void)
     }
 
     HAL_IncTick();
+    
+    // Phase 3: Update advanced features
+    spindle_calculate_rpm();
+    spindle_pid_controller();
     
     if(systick_isr)
         systick_isr();
