@@ -49,6 +49,7 @@ A **fully-featured grblHAL driver** for STM32G0 series processors, specifically 
 - 📐 **[Wiring Diagrams](WIRING_DIAGRAM.md)** - Visual connection reference
 - ⚠️ **[E-Stop Wiring](ESTOP_WIRING.md)** - CRITICAL safety system setup
 - 🎯 **[VFD Spindle Setup](VFD_SPINDLE_SETUP.md)** - Complete VFD configuration guide
+- 🏭 **[IndiCNC Setup](INDICNC_SETUP.md)** - Complete IndiCNC DIY CNC upgrade guide
 - 🧪 **[Testing Guide](TESTING_GUIDE.md)** - Comprehensive test procedures
 - 💾 **[Firmware Guide](firmware/README.md)** - Version descriptions and updates
 
@@ -170,6 +171,13 @@ The BTT SKR Mini E3 v3.0 uses 3D printer terminology. See our **[Connection Guid
 - Spindle control (FAN1/HEAT0 outputs)
 - Coolant control (FAN2/HEAT1 outputs)
 - Probe and control panel wiring
+
+### IndiCNC DIY CNC Integration
+Upgrading an IndiCNC machine? See **[IndiCNC Setup](INDICNC_SETUP.md)** for:
+- Complete upgrade procedure from stock controller
+- IndiCNC-specific wiring adaptations
+- Calibration for IndiCNC mechanical systems
+- Performance tuning and troubleshooting
 
 ### Visual Wiring
 Check **[Wiring Diagrams](WIRING_DIAGRAM.md)** for:
