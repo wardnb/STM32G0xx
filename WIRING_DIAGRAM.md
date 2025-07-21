@@ -65,8 +65,15 @@ Visual wiring reference for common CNC configurations.
     │                  │              │             │
     └──────────────────┘              └─────────────┘
 
-    PWM to 0-10V Converter Circuit:
-    PA1 ──[1kΩ]──┬──[10kΩ]──┬── To VFD AI1
+    ⚠️ IMPORTANT: PWM to 0-10V Converter Required!
+    
+    Commercial PWM to 0-10V Module (Recommended ~$10-15):
+    PA1 ──[PWM]──┬── Module ──[0-10V]── To VFD AI1
+    3.3V ─[VCC]─┤           │
+    GND ─[GND]─┴───────────┴─────────── To VFD ACM
+    
+    Simple RC Filter (Not Recommended - only 0-3.3V):
+    PA1 ──[1kΩ]──┬──[10kΩ]──┬── To VFD AI1  
                   │          │
                  ═╪═ 10µF   ═╪═ 100nF
                   │          │

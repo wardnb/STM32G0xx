@@ -63,22 +63,39 @@ This guide translates the 3D printer-oriented labels on the BTT SKR Mini E3 v3.0
 
 | 3D Printer Label | CNC Function | Pin | Wire | Notes |
 |------------------|--------------|-----|------|-------|
-| **FAN1** | **Spindle Direction** | PC6 | To VFD DIR+ | HIGH = Forward |
-| **HEAT0** | **Spindle Enable** | PC7 | To VFD Enable | HIGH = Run |
-| **PA1** | **Spindle PWM** | PA1 | To VFD AI1 | 0-3.3V PWM |
+| **FAN1** | **Spindle Direction** | PC6 | To VFD FOR/REV | HIGH = Forward |
+| **HEAT0** | **Spindle Enable** | PC7 | To VFD RUN | HIGH = Run |
+| **PA1** | **Spindle PWM** | PA1 | **Needs Converter** | 3.3V PWM → 0-10V |
 
-**VFD Wiring Example**:
+### ⚠️ IMPORTANT: PWM to Voltage Conversion Required
+
+**The board outputs 3.3V PWM, but most VFDs need 0-10V analog input.**
+
+You need a **PWM to 0-10V converter module** (~$10-15) for proper VFD control.
+
+See **[VFD_SPINDLE_SETUP.md](VFD_SPINDLE_SETUP.md)** for:
+- PWM converter selection and wiring
+- VFD parameter configuration  
+- Complete setup procedures
+- Troubleshooting common issues
+
+**Complete VFD Wiring**:
 ```
-SKR Mini E3 → VFD
-PC6 (FAN1) → FOR (Forward Run)
-PC7 (HEAT0) → Enable/Run
-PA1 → AI1 (Analog Input)
-GND → ACM (Analog Common)
+SKR Mini E3 → PWM Converter → VFD
+PA1 (PWM) → PWM IN
+3.3V → VCC           
+GND → GND
+          PWM OUT → AI1 (0-10V)
+          GND → ACM
+
+Direct connections:
+PC6 (FAN1) → VFD FOR (Forward)
+PC7 (HEAT0) → VFD RUN
 ```
 
 **PWM Spindle (No VFD)**:
 ```
-PA1 → PWM Speed Controller
+PA1 → PWM Speed Controller (3.3V compatible)
 PC7 → Relay/MOSFET Enable
 ```
 

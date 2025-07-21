@@ -48,6 +48,7 @@ A **fully-featured grblHAL driver** for STM32G0 series processors, specifically 
 - 🔌 **[Connection Guide](CONNECTION_GUIDE.md)** - Detailed wiring for CNC use
 - 📐 **[Wiring Diagrams](WIRING_DIAGRAM.md)** - Visual connection reference
 - ⚠️ **[E-Stop Wiring](ESTOP_WIRING.md)** - CRITICAL safety system setup
+- 🎯 **[VFD Spindle Setup](VFD_SPINDLE_SETUP.md)** - Complete VFD configuration guide
 - 🧪 **[Testing Guide](TESTING_GUIDE.md)** - Comprehensive test procedures
 - 💾 **[Firmware Guide](firmware/README.md)** - Version descriptions and updates
 
