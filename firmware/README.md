@@ -4,7 +4,26 @@ Pre-compiled firmware binaries for BTT SKR Mini E3 v3.0 board (STM32G0B1RET6).
 
 ## Available Firmware Versions
 
-### 🚀 LATEST BULLETPROOF RELEASE (RECOMMENDED)
+### 🌟 ULTIMATE RELEASE - DUAL BULLETPROOF (NEWEST)
+
+#### `firmware_usb_ultimate.bin` - Ultimate USB + UART Implementation  
+- **Communication**: Bulletproof USB CDC + Enhanced UART layers
+- **Features**: Complete grblHAL + Bulletproof USB + Bulletproof UART
+- **USB**: Advanced connection state management, transmit buffering, auto-recovery
+- **UART**: Error detection, state management, diagnostic monitoring
+- **Windows**: Optimized descriptors and enumeration for Windows 10/11
+- **Status**: ✅ Production ready - Maximum reliability on both interfaces
+- **Best for**: ALL users - Ultimate reliability and compatibility
+
+#### `firmware_uart_ultimate.bin` - Ultimate UART + USB Management
+- **Communication**: Enhanced UART with bulletproof USB management layers
+- **Features**: Complete grblHAL + Advanced UART reliability + USB state management
+- **UART**: 256-byte TX buffer, error recovery, connection monitoring  
+- **USB**: Background management for maximum compatibility
+- **Status**: ✅ Production ready - Ultimate UART reliability
+- **Best for**: UART users wanting maximum reliability and error handling
+
+### 🚀 BULLETPROOF RELEASE (STABLE)
 
 #### `firmware_usb_bulletproof.bin` - Enterprise-Grade USB Implementation
 - **Communication**: Bulletproof USB CDC via Micro USB port
@@ -12,13 +31,13 @@ Pre-compiled firmware binaries for BTT SKR Mini E3 v3.0 board (STM32G0B1RET6).
 - **USB Reliability**: Connection state management, transmit buffering, auto-recovery
 - **Windows**: Optimized descriptors and enumeration for Windows 10/11
 - **Status**: ✅ Production ready - Handles disconnects, power cycles, driver issues
-- **Best for**: ALL users - Maximum reliability and compatibility
+- **Best for**: USB users preferring previous bulletproof version
 
 #### `firmware_uart_bulletproof.bin` - Enterprise-Grade UART Implementation
 - **Communication**: UART via TFT connector (PA9/PA10) + USB management layers
 - **Features**: Complete grblHAL + Advanced connection reliability
 - **Status**: ✅ Production ready
-- **Best for**: Systems using UART but wanting bulletproof connection handling
+- **Best for**: UART users preferring previous bulletproof version
 
 ### 📦 Previous Stable Versions
 
@@ -57,7 +76,7 @@ Pre-compiled firmware binaries for BTT SKR Mini E3 v3.0 board (STM32G0B1RET6).
    - Format as FAT32 (not exFAT or NTFS)
 
 2. **Copy Firmware**:
-   - Choose your firmware (recommended: `firmware_usb_bulletproof.bin`)
+   - Choose your firmware (recommended: `firmware_usb_ultimate.bin`)
    - Copy to SD card root directory
    - **RENAME to exactly**: `firmware.bin`
 
@@ -132,7 +151,7 @@ Pre-compiled firmware binaries for BTT SKR Mini E3 v3.0 board (STM32G0B1RET6).
 - I2C accessories (PB8/PB9)
 - EEPROM settings storage
 
-## 🚀 NEW: Bulletproof Reliability Features
+## 🌟 NEW: Ultimate Reliability Features (Both USB & UART)
 
 ✅ **USB Connection Management**
 - Automatic disconnect detection & recovery
@@ -140,11 +159,25 @@ Pre-compiled firmware binaries for BTT SKR Mini E3 v3.0 board (STM32G0B1RET6).
 - Connection state tracking with diagnostics
 - Survives USB cable removal/reconnection
 
-✅ **Advanced Transmit Buffering**
+✅ **Advanced USB Transmit Buffering**
 - 128-byte transmit buffer with flow control
 - Packet-based 64-byte USB CDC transmission
 - Transmit completion tracking and callbacks
 - No data loss during USB busy periods
+
+✅ **Enhanced UART Reliability** 
+- 256-byte UART transmit buffer with flow control
+- Advanced error detection and recovery
+- Connection state management and monitoring
+- Interrupt-driven transmission with completion tracking
+- Hardware error counting and diagnostic reporting
+
+✅ **Dual-Interface Error Recovery**
+- Cross-interface state management
+- Automatic retry on failed operations
+- Connection attempt counting for both USB and UART
+- State validation prevents invalid operations
+- Recovery from overrun, framing, and parity errors
 
 ✅ **Windows 10/11 Optimized**
 - Enhanced device descriptors for Windows compatibility
@@ -152,11 +185,11 @@ Pre-compiled firmware binaries for BTT SKR Mini E3 v3.0 board (STM32G0B1RET6).
 - Unique serial numbers from STM32 hardware UID
 - High-priority interrupts for reliable enumeration
 
-✅ **Error Recovery Systems**
-- Automatic retry on failed USB operations
-- Connection attempt counting for diagnostics
-- State validation prevents invalid operations
-- Bulletproof against power cycles and driver issues
+✅ **Professional Diagnostic Features**
+- Real-time error counting and classification
+- Connection attempt tracking
+- Activity timestamps for both interfaces
+- Comprehensive state monitoring
 
 ## Quick Test
 
