@@ -118,6 +118,11 @@ static int8_t CDC_TransmitCplt_FS(uint8_t *Buf, uint32_t *Len, uint8_t epnum)
   UNUSED(Buf);
   UNUSED(Len);
   UNUSED(epnum);
+  
+  // Notify USB serial that transmission is complete
+  extern void usbTransmitComplete(void);
+  usbTransmitComplete();
+  
   return result;
 }
 

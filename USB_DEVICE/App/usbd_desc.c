@@ -27,9 +27,9 @@
 #define USBD_LANGID_STRING     1033
 #define USBD_MANUFACTURER_STRING     "grblHAL"
 #define USBD_PID_FS     22336
-#define USBD_PRODUCT_STRING_FS     "grblHAL Controller"
-#define USBD_CONFIGURATION_STRING_FS     "CDC Config"
-#define USBD_INTERFACE_STRING_FS     "CDC Interface"
+#define USBD_PRODUCT_STRING_FS     "STM32 grblHAL CNC Controller"
+#define USBD_CONFIGURATION_STRING_FS     "grblHAL CDC Configuration"
+#define USBD_INTERFACE_STRING_FS     "grblHAL Serial Interface"
 
 static void Get_SerialNum(void);
 static void IntToUnicode(uint32_t value, uint8_t * pbuf, uint8_t len);
@@ -57,22 +57,22 @@ __ALIGN_BEGIN uint8_t USBD_FS_DeviceDesc[USB_LEN_DEV_DESC] __ALIGN_END =
 {
   0x12,                       /*bLength */
   USB_DESC_TYPE_DEVICE,       /*bDescriptorType*/
-  0x00,                       /*bcdUSB */
+  0x00,                       /*bcdUSB: USB 2.0 */
   0x02,
-  0x02,                       /*bDeviceClass*/
-  0x02,                       /*bDeviceSubClass*/
-  0x00,                       /*bDeviceProtocol*/
-  USB_MAX_EP0_SIZE,           /*bMaxPacketSize*/
-  LOBYTE(USBD_VID),           /*idVendor*/
+  0x02,                       /*bDeviceClass: CDC*/
+  0x02,                       /*bDeviceSubClass: Abstract Control Model*/
+  0x00,                       /*bDeviceProtocol: No specific protocol*/
+  USB_MAX_EP0_SIZE,           /*bMaxPacketSize0: 64 bytes*/
+  LOBYTE(USBD_VID),           /*idVendor: grblHAL VID*/
   HIBYTE(USBD_VID),           /*idVendor*/
-  LOBYTE(USBD_PID_FS),        /*idProduct*/
+  LOBYTE(USBD_PID_FS),        /*idProduct: grblHAL PID*/
   HIBYTE(USBD_PID_FS),        /*idProduct*/
-  0x00,                       /*bcdDevice rel. 2.00*/
-  0x02,
-  USBD_IDX_MFC_STR,           /*Index of manufacturer  string*/
+  0x10,                       /*bcdDevice: Device version 1.10*/
+  0x01,
+  USBD_IDX_MFC_STR,           /*Index of manufacturer string*/
   USBD_IDX_PRODUCT_STR,       /*Index of product string*/
   USBD_IDX_SERIAL_STR,        /*Index of serial number string*/
-  USBD_MAX_NUM_CONFIGURATION  /*bNumConfigurations*/
+  USBD_MAX_NUM_CONFIGURATION  /*bNumConfigurations: 1*/
 };
 
 __ALIGN_BEGIN uint8_t USBD_LangIDDesc[USB_LEN_LANGID_STR_DESC] __ALIGN_END =
