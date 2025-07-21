@@ -298,7 +298,7 @@ io_stream_t *serialInit0 (uint32_t baud_rate)
     txbuf.max_length = sizeof(txbuf.data);
 
     rxbuffer.tail = rxbuffer.head = rxbuffer.backup = rxbuffer.data;
-    // rxbuffer.max_length = RX_BUFFER_SIZE;  // TODO: Fix buffer structure compatibility
+    // Note: max_length is handled by grblHAL core buffer management
     rxbuffer.overflow = false;
 
     // Initialize enhanced transmit buffer

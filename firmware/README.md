@@ -2,19 +2,32 @@
 
 Pre-compiled firmware binaries for BTT SKR Mini E3 v3.0 board (STM32G0B1RET6).
 
+## ⚠️ **TESTING DISCLAIMER**
+
+**v1.0.0-beta1 firmware is COMPLETELY UNTESTED on actual hardware.**
+
+- 🔴 **NO HARDWARE VALIDATION** - Could damage equipment or cause injury
+- 🔴 **USE AT YOUR OWN RISK** - Only for experienced developers
+- 🔴 **NOT RECOMMENDED** for production CNC machines
+- ✅ **USE v0.9.0** for tested, stable functionality
+
+**By using v1.0.0-beta1, you acknowledge full responsibility for any consequences.**
+
 ## Versioning Scheme
 
 This project follows [Semantic Versioning](https://semver.org/):
-- **v1.0.0-rc1** - Release candidate with complete safety systems (current)
-- **v1.0.0** - First stable release after field testing  
+- **v1.0.0-beta1** - Feature complete, **UNTESTED** hardware implementation (current)
+- **v1.0.0-rc1** - Release candidate after successful hardware testing
+- **v1.0.0** - First stable release after field testing and validation
 - **v1.x.x** - Future stable releases and features
-- **v0.9.x** - Previous feature complete versions (superseded)
+
+⚠️ **IMPORTANT**: All v1.0.0-beta versions are **COMPLETELY UNTESTED** on actual hardware. Use at your own risk for testing purposes only.
 
 ## Available Firmware Versions
 
-### 🏆 **v1.0.0-rc1 - COMPLETE INDUSTRIAL CNC SAFETY CONTROLLER** (LATEST - PRODUCTION READY)
+### ⚠️ **v1.0.0-beta1 - UNTESTED FEATURE COMPLETE FIRMWARE** (LATEST - USE AT YOUR OWN RISK)
 
-#### `firmware_usb_v1.0.0-rc1.bin` - **🥇 COMPLETE INDUSTRIAL CNC CONTROLLER (USB)**
+#### `firmware_usb_v1.0.0-beta1.bin` - **⚠️ UNTESTED COMPLETE CNC CONTROLLER (USB)**
 - **Communication**: Bulletproof USB CDC via Micro USB port  
 - **Motion Control**: ✅ **FULLY IMPLEMENTED** - Real-time TIM3 step generation
 - **I/O Systems**: ✅ **100% COMPLETE** - All stepper, coolant, limit, probe I/O
@@ -26,16 +39,16 @@ This project follows [Semantic Versioning](https://semver.org/):
   - **Response Time**: Microsecond-level safety interrupt processing
 - **Timer Architecture**: TIM3 stepper + TIM2 spindle PWM/encoder (no conflicts)
 - **Real-time Performance**: Professional-grade interrupt handling and timing
-- **Status**: 🟢 **PRODUCTION READY** - **INDUSTRIAL-GRADE CNC SAFETY CONTROLLER**
-- **Best for**: **ALL CNC USERS** - **RECOMMENDED PRODUCTION VERSION**
+- **⚠️ Status**: 🟡 **COMPLETELY UNTESTED** - **USE AT YOUR OWN RISK FOR TESTING ONLY**
+- **Best for**: **EXPERIENCED DEVELOPERS** - **HARDWARE TESTING AND VALIDATION**
 
-#### `firmware_uart_v1.0.0-rc1.bin` - **🥇 COMPLETE INDUSTRIAL CNC CONTROLLER (UART)**
+#### `firmware_uart_v1.0.0-beta1.bin` - **⚠️ UNTESTED COMPLETE CNC CONTROLLER (UART)**
 - **Communication**: UART via TFT connector (PA9/PA10) at 115200 baud
 - **Motion Control**: ✅ **FULLY IMPLEMENTED** - Real-time step generation 
 - **All Systems**: ✅ **100% FUNCTIONAL** - Spindle + limits + I/O complete
 - **🆕 Safety Systems**: ✅ **100% COMPLETE** - Same safety features as USB version
-- **Status**: 🟢 **PRODUCTION READY** - **INDUSTRIAL-GRADE CNC SAFETY CONTROLLER**
-- **Best for**: UART users - **RECOMMENDED PRODUCTION UART VERSION**
+- **⚠️ Status**: 🟡 **COMPLETELY UNTESTED** - **USE AT YOUR OWN RISK FOR TESTING ONLY**
+- **Best for**: **EXPERIENCED DEVELOPERS** - **HARDWARE TESTING AND VALIDATION**
 
 ### 📦 **v0.9.0 - FEATURE COMPLETE CNC CONTROLLER** (Previous Release)
 
@@ -116,7 +129,8 @@ This project follows [Semantic Versioning](https://semver.org/):
    - Format as FAT32 (not exFAT or NTFS)
 
 2. **Copy Firmware**:
-   - Choose your firmware (recommended: `firmware_usb_v1.0.0-rc1.bin`)
+   - ⚠️ **TESTING ONLY**: Choose `firmware_usb_v1.0.0-beta1.bin` (UNTESTED - USE AT YOUR OWN RISK)
+   - ✅ **STABLE USE**: Choose `firmware_usb_v0.9.0.bin` (Tested and working)
    - Copy to SD card root directory
    - **RENAME to exactly**: `firmware.bin`
 
