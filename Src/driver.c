@@ -53,9 +53,9 @@ static void coolantSetState (coolant_state_t mode);
 static coolant_state_t coolantGetState (void);
 static void probeConfigureInvertMask (bool is_probe_away);
 static probe_state_t probeGetState (void);
-static spindle_state_t spindleGetState (void);
-static void spindleSetState (spindle_state_t state, float rpm);
-static void spindleUpdateRPM (float rpm);
+static spindle_state_t spindleGetState (spindle_ptrs_t *spindle);
+static void spindleSetState (spindle_ptrs_t *spindle, spindle_state_t state, float rpm);
+static void spindleUpdateRPM (spindle_ptrs_t *spindle, float rpm);
 static control_signals_t systemGetState (void);
 static uint32_t getElapsedTicks (void);
 static void bitsSetAtomic (volatile uint_fast16_t *ptr, uint_fast16_t bits);
@@ -443,10 +443,21 @@ bool driver_init (void)
     hal.probe.configure = probeConfigureInvertMask;
     hal.probe.get_state = probeGetState;
     
-    // Register spindle HAL functions - temporarily commented due to grblHAL version differences
-    // hal.spindle.set_state = spindleSetState;
-    // hal.spindle.get_state = spindleGetState;
-    // hal.spindle.update_rpm = spindleUpdateRPM;
+    // Register PWM spindle using spindle_register() function
+    static const spindle_ptrs_t spindle_pwm = {
+        .type = SpindleType_PWM,
+        .cap.variable = On,
+        .cap.at_speed = On,
+        .cap.direction = On,
+        .config = NULL,
+        .set_state = spindleSetState,
+        .get_state = spindleGetState,
+        .get_pwm = NULL,        // Using default PWM calculation
+        .update_pwm = NULL,     // Using direct register update
+        .update_rpm = spindleUpdateRPM
+    };
+    
+    spindle_register(&spindle_pwm, "PWM");
     
     // Register control system functions
     hal.control.get_state = systemGetState;
@@ -454,10 +465,7 @@ bool driver_init (void)
     // Register timer functions
     hal.get_elapsed_ticks = getElapsedTicks;
 
-    // Note: Spindle HAL structure may vary - using simplified approach
-    // hal.spindle.set_state = spindleSetState;
-    // hal.spindle.get_state = spindleGetState;
-    // hal.spindle.update_rpm = spindleUpdateRPM;
+    // Spindle HAL functions registered above
 
     hal.control.get_state = systemGetState;
 
@@ -505,12 +513,42 @@ void driver_delay_ms (uint32_t ms, void (*callback)(void))
 
 static void stepperWakeUp (void)
 {
-    // TODO: Enable stepper drivers
+    // Enable all stepper drivers (active low)
+    DIGITAL_OUT(X_ENABLE_PORT, X_ENABLE_PIN, 0);  // Enable X stepper
+    DIGITAL_OUT(Y_ENABLE_PORT, Y_ENABLE_PIN, 0);  // Enable Y stepper
+    DIGITAL_OUT(Z_ENABLE_PORT, Z_ENABLE_PIN, 0);  // Enable Z stepper
+    
+#ifdef M3_AVAILABLE
+    DIGITAL_OUT(M3_ENABLE_PORT, M3_ENABLE_PIN, 0);  // Enable E0 motor if available
+#endif
 }
 
 static void stepperGoIdle (bool clear_signals)
 {
-    // TODO: Disable stepper drivers
+    // Disable all stepper drivers (active low - set high to disable)
+    DIGITAL_OUT(X_ENABLE_PORT, X_ENABLE_PIN, 1);  // Disable X stepper
+    DIGITAL_OUT(Y_ENABLE_PORT, Y_ENABLE_PIN, 1);  // Disable Y stepper
+    DIGITAL_OUT(Z_ENABLE_PORT, Z_ENABLE_PIN, 1);  // Disable Z stepper
+    
+#ifdef M3_AVAILABLE
+    DIGITAL_OUT(M3_ENABLE_PORT, M3_ENABLE_PIN, 1);  // Disable E0 motor if available
+#endif
+    
+    if (clear_signals) {
+        // Clear all step and direction signals when going idle
+        DIGITAL_OUT(X_STEP_PORT, X_STEP_PIN, 0);
+        DIGITAL_OUT(Y_STEP_PORT, Y_STEP_PIN, 0);
+        DIGITAL_OUT(Z_STEP_PORT, Z_STEP_PIN, 0);
+        
+        DIGITAL_OUT(X_DIRECTION_PORT, X_DIRECTION_PIN, 0);
+        DIGITAL_OUT(Y_DIRECTION_PORT, Y_DIRECTION_PIN, 0);
+        DIGITAL_OUT(Z_DIRECTION_PORT, Z_DIRECTION_PIN, 0);
+        
+#ifdef M3_AVAILABLE
+        DIGITAL_OUT(M3_STEP_PORT, M3_STEP_PIN, 0);
+        DIGITAL_OUT(M3_DIRECTION_PORT, M3_DIRECTION_PIN, 0);
+#endif
+    }
 }
 
 // Phase 2: Enhanced stepper enable with backlash compensation
@@ -549,8 +587,32 @@ static void stepperEnable (axes_signals_t enable)
 
 static uint32_t stepperCyclesPerTick (uint32_t cycles_per_tick)
 {
-    // Configure stepper timer period
-    // TODO: Set actual timer registers when timer implementation is complete
+    // Configure TIM3 for stepper timing (separate from TIM2 spindle functions)
+    
+    // Enable TIM3 clock (TIM3EN is bit 1 in APBENR1)
+    RCC->APBENR1 |= (1<<1);
+    
+    // Stop timer during configuration
+    TIM3->CR1 = 0;
+    
+    // Configure timer for stepper step generation
+    TIM3->PSC = STEPPER_TIMER_DIV - 1;  // Prescaler for 16MHz timer clock (64MHz/4)
+    TIM3->ARR = cycles_per_tick - 1;    // Period for step pulse timing
+    TIM3->CNT = 0;                      // Reset counter
+    
+    // Configure for one-pulse mode (timer stops after each step)
+    TIM3->CR1 |= (1<<3);               // OPM - One-pulse mode
+    
+    // Enable update interrupt for step pulse end detection
+    TIM3->DIER |= (1<<0);              // UIE - Update interrupt enable
+    TIM3->SR = 0;                      // Clear all flags
+    
+    // Configure NVIC for TIM3 interrupt
+    HAL_NVIC_SetPriority(TIM3_IRQn, 1, 0);  // High priority for real-time motion
+    HAL_NVIC_EnableIRQ(TIM3_IRQn);
+    
+    // Timer will be started by stepperPulseStart when needed
+    
     return cycles_per_tick;
 }
 
@@ -639,6 +701,11 @@ static void stepperPulseStart (stepper_t *stepper)
         DIGITAL_OUT(Y_STEP_PORT, Y_STEP_PIN, total_steps.y);
         DIGITAL_OUT(Z_STEP_PORT, Z_STEP_PIN, total_steps.z);
 #endif
+        
+        // Start stepper timer for step pulse timing
+        // TIM3 is configured in one-pulse mode and will generate interrupt when pulse ends
+        TIM3->CNT = 0;              // Reset counter
+        TIM3->CR1 |= (1<<0);        // CEN - Start timer
     }
 }
 
@@ -732,13 +799,33 @@ static axes_signals_t limitsGetState (void)
 
 static void coolantSetState (coolant_state_t mode)
 {
-    // TODO: Control coolant outputs
+#if COOLANT_ENABLE & COOLANT_FLOOD
+    // Control flood coolant (M7/M8/M9 commands)
+    HAL_GPIO_WritePin(COOLANT_FLOOD_PORT, 1<<COOLANT_FLOOD_PIN, 
+                      mode.flood ? GPIO_PIN_SET : GPIO_PIN_RESET);
+#endif
+
+#if COOLANT_ENABLE & COOLANT_MIST  
+    // Control mist coolant (M7/M9 commands)
+    HAL_GPIO_WritePin(COOLANT_MIST_PORT, 1<<COOLANT_MIST_PIN,
+                      mode.mist ? GPIO_PIN_SET : GPIO_PIN_RESET);
+#endif
 }
 
 static coolant_state_t coolantGetState (void)
 {
     coolant_state_t state = {0};
-    // TODO: Read coolant output states
+    
+#if COOLANT_ENABLE & COOLANT_FLOOD
+    // Read flood coolant state
+    state.flood = HAL_GPIO_ReadPin(COOLANT_FLOOD_PORT, 1<<COOLANT_FLOOD_PIN) == GPIO_PIN_SET;
+#endif
+
+#if COOLANT_ENABLE & COOLANT_MIST
+    // Read mist coolant state  
+    state.mist = HAL_GPIO_ReadPin(COOLANT_MIST_PORT, 1<<COOLANT_MIST_PIN) == GPIO_PIN_SET;
+#endif
+    
     return state;
 }
 
@@ -772,7 +859,7 @@ static probe_state_t probeGetState (void)
     return state;
 }
 
-static spindle_state_t spindleGetState (void)
+static spindle_state_t spindleGetState (spindle_ptrs_t *spindle)
 {
     spindle_state_t state = {0};
     
@@ -786,7 +873,7 @@ static spindle_state_t spindleGetState (void)
     return state;
 }
 
-static void spindleUpdateRPM (float rpm)
+static void spindleUpdateRPM (spindle_ptrs_t *spindle, float rpm)
 {
 #ifdef SPINDLE_PWM_PIN
     // RPM to PWM conversion
@@ -800,7 +887,7 @@ static void spindleUpdateRPM (float rpm)
 }
 
 // Phase 3: Advanced spindle control
-static void spindleSetState (spindle_state_t state, float rpm)
+static void spindleSetState (spindle_ptrs_t *spindle_ptr, spindle_state_t state, float rpm)
 {
     spindle_ctrl.target_rpm = rpm;
     
@@ -877,32 +964,35 @@ static void spindle_calculate_rpm(void)
     }
 }
 
-// Combined TIM2 interrupt handler for stepper timer and spindle encoder
-void TIM2_IRQHandler(void)
+// TIM3 interrupt handler for stepper timer
+void TIM3_IRQHandler(void)
 {
     // Handle stepper timer (Update interrupt)
-    if (TIM2->SR & (1<<0)) {  // UIF bit
-        TIM2->SR &= ~(1<<0);  // Clear update interrupt flag
+    if (TIM3->SR & (1<<0)) {  // UIF bit
+        TIM3->SR &= ~(1<<0);  // Clear update interrupt flag
         
-        // Clear step pins (end of pulse)
+        // Clear step pins (end of step pulse)
         STEP_PORT->BRR = X_STEP_BIT | Y_STEP_BIT | Z_STEP_BIT;
 #ifdef M3_AVAILABLE
         HAL_GPIO_WritePin(M3_STEP_PORT, 1<<M3_STEP_PIN, GPIO_PIN_RESET);
 #endif
         
-        // Disable timer (one-pulse mode)
-        TIM2->CR1 &= ~TIM_CR1_CEN;
+        // Timer automatically stops due to one-pulse mode (OPM)
         
-        // Signal completion to stepper ISR
+        // Signal completion to grblHAL stepper ISR
         if (hal.stepper.interrupt_callback)
             hal.stepper.interrupt_callback();
     }
-    
+}
+
+// TIM2 interrupt handler for spindle encoder only
+void TIM2_IRQHandler(void)
+{
     // Handle spindle encoder (Capture Compare interrupt)
     if (TIM2->SR & (1<<1)) {  // CC1IF bit
         spindle_ctrl.encoder_count++;
         spindle_ctrl.last_encoder_time = HAL_GetTick();
-        TIM2->SR &= ~(1<<1);
+        TIM2->SR &= ~(1<<1);  // Clear CC1 interrupt flag
     }
 }
 
@@ -953,8 +1043,41 @@ bool driver_setup (settings_t *settings)
     __HAL_RCC_GPIOC_CLK_ENABLE();
     __HAL_RCC_GPIOD_CLK_ENABLE();
     
-    // Initialize coolant output pins
     GPIO_InitTypeDef GPIO_InitStruct = {0};
+    
+    // Initialize stepper motor pins
+    GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
+    GPIO_InitStruct.Pull = GPIO_NOPULL;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+    
+    // Step pins
+    GPIO_InitStruct.Pin = X_STEP_BIT;
+    HAL_GPIO_Init(X_STEP_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = Y_STEP_BIT;
+    HAL_GPIO_Init(Y_STEP_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = Z_STEP_BIT;
+    HAL_GPIO_Init(Z_STEP_PORT, &GPIO_InitStruct);
+    
+    // Direction pins
+    GPIO_InitStruct.Pin = X_DIRECTION_BIT;
+    HAL_GPIO_Init(X_DIRECTION_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = Y_DIRECTION_BIT;
+    HAL_GPIO_Init(Y_DIRECTION_PORT, &GPIO_InitStruct);
+    GPIO_InitStruct.Pin = Z_DIRECTION_BIT;
+    HAL_GPIO_Init(Z_DIRECTION_PORT, &GPIO_InitStruct);
+    
+    // Enable pins (start disabled - high for TMC drivers)
+    GPIO_InitStruct.Pin = X_ENABLE_BIT;
+    HAL_GPIO_Init(X_ENABLE_PORT, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(X_ENABLE_PORT, X_ENABLE_BIT, GPIO_PIN_SET);  // Disabled
+    
+    GPIO_InitStruct.Pin = Y_ENABLE_BIT;
+    HAL_GPIO_Init(Y_ENABLE_PORT, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(Y_ENABLE_PORT, Y_ENABLE_BIT, GPIO_PIN_SET);  // Disabled
+    
+    GPIO_InitStruct.Pin = Z_ENABLE_BIT;
+    HAL_GPIO_Init(Z_ENABLE_PORT, &GPIO_InitStruct);
+    HAL_GPIO_WritePin(Z_ENABLE_PORT, Z_ENABLE_BIT, GPIO_PIN_SET);  // Disabled
     
 #if COOLANT_ENABLE & COOLANT_FLOOD
     GPIO_InitStruct.Pin = 1<<COOLANT_FLOOD_PIN;
@@ -1007,6 +1130,22 @@ bool driver_setup (settings_t *settings)
     GPIO_InitStruct.Pin = 1<<SAFETY_DOOR_PIN;
     HAL_GPIO_Init(SAFETY_DOOR_PORT, &GPIO_InitStruct);
 #endif
+
+    // Initialize limit switch pins as inputs with pull-ups
+    GPIO_InitStruct.Pin = X_LIMIT_BIT | Y_LIMIT_BIT | Z_LIMIT_BIT;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(LIMIT_PORT, &GPIO_InitStruct);
+
+#if PROBE_ENABLE
+    // Initialize probe pin as input with pull-up
+    GPIO_InitStruct.Pin = 1<<PROBE_PIN;
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+    HAL_GPIO_Init(PROBE_PORT, &GPIO_InitStruct);
+#endif
     
     return true;
 }
@@ -1038,7 +1177,21 @@ static uint_fast16_t valueSetAtomic (volatile uint_fast16_t *ptr, uint_fast16_t 
 
 void gpio_irq_enable (const input_signal_t *input, pin_irq_mode_t irq_mode)
 {
-    // TODO: Configure GPIO interrupt
+    // Basic GPIO interrupt configuration for STM32G0
+    // This function is a placeholder - interrupts are configured manually in limitsEnable()
+    // TODO: Implement when proper GPIO interrupt mode constants are available
+    
+    // For now, just enable the appropriate NVIC interrupt
+    if (input->pin <= 1) {
+        HAL_NVIC_SetPriority(EXTI0_1_IRQn, 2, 0);
+        HAL_NVIC_EnableIRQ(EXTI0_1_IRQn);
+    } else if (input->pin <= 3) {
+        HAL_NVIC_SetPriority(EXTI2_3_IRQn, 2, 0);
+        HAL_NVIC_EnableIRQ(EXTI2_3_IRQn);
+    } else {
+        HAL_NVIC_SetPriority(EXTI4_15_IRQn, 2, 0);
+        HAL_NVIC_EnableIRQ(EXTI4_15_IRQn);
+    }
 }
 
 // Phase 3: Tool change functions
@@ -1133,29 +1286,44 @@ void SysTick_Handler (void)
 // Limit switch interrupt handlers
 void EXTI0_1_IRQHandler(void)
 {
-    // Handle PC0 (X limit) and PC1 (Y limit)
-    // Simplified limit interrupt handling
-    if (1) {  // Always handle for now
-        // Limit switch triggered - let grblHAL handle it
-        // Temporarily disable interrupt callback due to type mismatch
-        // if (hal.limits.interrupt_callback)
-        //     hal.limits.interrupt_callback(limitsGetState());
-    }
+    // Simplified limit switch interrupt handling for STM32G0
+    // Use HAL generic interrupt handler for proper flag clearing
+    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_0);
+    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_1);
     
-    if (1) {  // Always handle for now
-        // Temporarily disable interrupt callback due to type mismatch
-        // if (hal.limits.interrupt_callback)
-        //     hal.limits.interrupt_callback(limitsGetState());
+    // Convert axes_signals_t to limit_signals_t and call callback
+    if (hal.limits.interrupt_callback) {
+        axes_signals_t axes_state = limitsGetState();
+        limit_signals_t limit_state = {0};
+        
+        // Convert axes signals to limit signals
+        limit_state.min.x = axes_state.x;
+        limit_state.min.y = axes_state.y; 
+        limit_state.min.z = axes_state.z;
+        // Max limits not used on this board (dual endstop systems would use these)
+        
+        hal.limits.interrupt_callback(limit_state);
     }
 }
 
 void EXTI2_3_IRQHandler(void)
 {
-    // Handle PC2 (Z limit)
-    // Simplified limit interrupt handling
-    if (1) {  // Always handle for now
-        // Temporarily disable interrupt callback due to type mismatch
-        // if (hal.limits.interrupt_callback)
-        //     hal.limits.interrupt_callback(limitsGetState());
+    // Simplified limit switch interrupt handling for STM32G0  
+    // Use HAL generic interrupt handler for proper flag clearing
+    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_2);
+    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_3);
+    
+    // Convert axes_signals_t to limit_signals_t and call callback
+    if (hal.limits.interrupt_callback) {
+        axes_signals_t axes_state = limitsGetState();
+        limit_signals_t limit_state = {0};
+        
+        // Convert axes signals to limit signals
+        limit_state.min.x = axes_state.x;
+        limit_state.min.y = axes_state.y; 
+        limit_state.min.z = axes_state.z;
+        // Max limits not used on this board
+        
+        hal.limits.interrupt_callback(limit_state);
     }
 }

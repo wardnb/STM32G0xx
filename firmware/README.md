@@ -2,9 +2,64 @@
 
 Pre-compiled firmware binaries for BTT SKR Mini E3 v3.0 board (STM32G0B1RET6).
 
+## Versioning Scheme
+
+This project follows [Semantic Versioning](https://semver.org/):
+- **v0.9.x** - Feature complete, testing phase (current)  
+- **v1.0.0** - First stable release after field testing
+- **v1.x.x** - Future stable releases and features
+
 ## Available Firmware Versions
 
-### 🌟 ULTIMATE RELEASE - DUAL BULLETPROOF (NEWEST)
+### 🌟 **v0.9.0 - FEATURE COMPLETE CNC CONTROLLER** (LATEST - TESTING PHASE)
+
+#### `firmware_usb_v0.9.0.bin` - **🏆 COMPLETE CNC CONTROLLER (USB)**
+- **Communication**: Bulletproof USB CDC via Micro USB port  
+- **Motion Control**: ✅ **FULLY IMPLEMENTED** - Real-time TIM3 step generation
+- **I/O Systems**: ✅ **100% COMPLETE** - All stepper, coolant, limit, probe I/O
+- **Spindle Control**: ✅ **FULLY REGISTERED** - PWM spindle via `spindle_register()`
+- **Limit Interrupts**: ✅ **FULLY FUNCTIONAL** - Proper callback type conversion
+- **Timer Architecture**: TIM3 stepper + TIM2 spindle PWM/encoder (no conflicts)
+- **Real-time Performance**: Professional-grade interrupt handling and timing
+- **Status**: 🟢 **READY FOR TESTING** - **ALL FUNCTIONS WORKING**
+- **Best for**: **ALL CNC USERS** - **RECOMMENDED VERSION**
+
+#### `firmware_uart_v0.9.0.bin` - **🏆 COMPLETE CNC CONTROLLER (UART)**
+- **Communication**: UART via TFT connector (PA9/PA10) at 115200 baud
+- **Motion Control**: ✅ **FULLY IMPLEMENTED** - Real-time step generation 
+- **All Systems**: ✅ **100% FUNCTIONAL** - Spindle + limits + I/O complete
+- **Status**: 🟢 **READY FOR TESTING** - **ALL FUNCTIONS WORKING** 
+- **Best for**: UART users - **RECOMMENDED UART VERSION**
+
+### 📦 PREVIOUS VERSIONS (Motion Control Complete)
+
+#### `firmware_usb_motion_complete.bin` - **MOTION CONTROL ONLY**
+- **Communication**: Bulletproof USB CDC via Micro USB port  
+- **Motion Control**: ✅ **FULLY IMPLEMENTED** - Real-time step generation with TIM3
+- **I/O Systems**: ✅ **100% Complete** - All stepper, coolant, limit, probe I/O
+- **Limitation**: ❌ Spindle HAL not registered, ❌ Limit callbacks commented out
+- **Status**: ⚠️ **Motion works, accessories limited**
+
+#### `firmware_uart_motion_complete.bin` - **MOTION CONTROL ONLY (UART)**
+- **Communication**: UART via TFT connector (PA9/PA10) at 115200 baud
+- **Limitation**: ❌ Spindle and limit interrupt gaps
+- **Status**: ⚠️ **Motion works, accessories limited**
+
+### 📦 LEGACY: BASIC I/O ONLY (No Motion Control)
+
+#### `firmware_usb_io_complete.bin` - Complete I/O + USB Implementation  
+- **Communication**: Bulletproof USB CDC via Micro USB port
+- **I/O Systems**: ✅ **100% Complete** - All basic I/O fully implemented
+- **Motion Control**: ❌ **NOT IMPLEMENTED** - stepperCyclesPerTick() is stub
+- **Status**: ⚠️ Limited use - I/O testing only
+- **Best for**: I/O testing without motion control
+
+#### `firmware_uart_io_complete.bin` - Complete I/O + UART Implementation
+- **Communication**: UART via TFT connector (PA9/PA10)
+- **Motion Control**: ❌ **NOT IMPLEMENTED** - stepperCyclesPerTick() is stub
+- **Status**: ⚠️ Limited use - I/O testing only
+
+### 🚀 ULTIMATE RELEASE - DUAL BULLETPROOF
 
 #### `firmware_usb_ultimate.bin` - Ultimate USB + UART Implementation  
 - **Communication**: Bulletproof USB CDC + Enhanced UART layers
@@ -12,8 +67,9 @@ Pre-compiled firmware binaries for BTT SKR Mini E3 v3.0 board (STM32G0B1RET6).
 - **USB**: Advanced connection state management, transmit buffering, auto-recovery
 - **UART**: Error detection, state management, diagnostic monitoring
 - **Windows**: Optimized descriptors and enumeration for Windows 10/11
+- **I/O**: Previous I/O implementation (90% complete)
 - **Status**: ✅ Production ready - Maximum reliability on both interfaces
-- **Best for**: ALL users - Ultimate reliability and compatibility
+- **Best for**: Users preferring ultimate communication reliability
 
 #### `firmware_uart_ultimate.bin` - Ultimate UART + USB Management
 - **Communication**: Enhanced UART with bulletproof USB management layers
@@ -76,7 +132,7 @@ Pre-compiled firmware binaries for BTT SKR Mini E3 v3.0 board (STM32G0B1RET6).
    - Format as FAT32 (not exFAT or NTFS)
 
 2. **Copy Firmware**:
-   - Choose your firmware (recommended: `firmware_usb_ultimate.bin`)
+   - Choose your firmware (recommended: `firmware_usb_v0.9.0.bin`)
    - Copy to SD card root directory
    - **RENAME to exactly**: `firmware.bin`
 
