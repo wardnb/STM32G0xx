@@ -31,97 +31,61 @@ This project follows [Semantic Versioning](https://semver.org/):
 - **Status**: 🟢 **READY FOR TESTING** - **ALL FUNCTIONS WORKING** 
 - **Best for**: UART users - **RECOMMENDED UART VERSION**
 
-### 📦 PREVIOUS VERSIONS (Motion Control Complete)
+## Version History
 
-#### `firmware_usb_motion_complete.bin` - **MOTION CONTROL ONLY**
-- **Communication**: Bulletproof USB CDC via Micro USB port  
-- **Motion Control**: ✅ **FULLY IMPLEMENTED** - Real-time step generation with TIM3
-- **I/O Systems**: ✅ **100% Complete** - All stepper, coolant, limit, probe I/O
+### **v0.8.0** - `firmware_usb_v0.8.0.bin` / `firmware_uart_v0.8.0.bin`
+- **Stage**: Final pre-release
+- **Motion Control**: ✅ Complete TIM3 step generation
+- **I/O Systems**: ✅ 100% functional
 - **Limitation**: ❌ Spindle HAL not registered, ❌ Limit callbacks commented out
-- **Status**: ⚠️ **Motion works, accessories limited**
+- **Status**: ⚠️ Motion works, accessories limited
 
-#### `firmware_uart_motion_complete.bin` - **MOTION CONTROL ONLY (UART)**
-- **Communication**: UART via TFT connector (PA9/PA10) at 115200 baud
-- **Limitation**: ❌ Spindle and limit interrupt gaps
-- **Status**: ⚠️ **Motion works, accessories limited**
-
-### 📦 LEGACY: BASIC I/O ONLY (No Motion Control)
-
-#### `firmware_usb_io_complete.bin` - Complete I/O + USB Implementation  
-- **Communication**: Bulletproof USB CDC via Micro USB port
-- **I/O Systems**: ✅ **100% Complete** - All basic I/O fully implemented
-- **Motion Control**: ❌ **NOT IMPLEMENTED** - stepperCyclesPerTick() is stub
-- **Status**: ⚠️ Limited use - I/O testing only
-- **Best for**: I/O testing without motion control
-
-#### `firmware_uart_io_complete.bin` - Complete I/O + UART Implementation
-- **Communication**: UART via TFT connector (PA9/PA10)
-- **Motion Control**: ❌ **NOT IMPLEMENTED** - stepperCyclesPerTick() is stub
-- **Status**: ⚠️ Limited use - I/O testing only
-
-### 🚀 ULTIMATE RELEASE - DUAL BULLETPROOF
-
-#### `firmware_usb_ultimate.bin` - Ultimate USB + UART Implementation  
-- **Communication**: Bulletproof USB CDC + Enhanced UART layers
-- **Features**: Complete grblHAL + Bulletproof USB + Bulletproof UART
-- **USB**: Advanced connection state management, transmit buffering, auto-recovery
-- **UART**: Error detection, state management, diagnostic monitoring
-- **Windows**: Optimized descriptors and enumeration for Windows 10/11
+### **v0.7.0** - `firmware_usb_v0.7.0.bin` / `firmware_uart_v0.7.0.bin`
+- **Stage**: Ultimate reliability implementation
+- **Communication**: Bulletproof USB + Enhanced UART
+- **Features**: Maximum connection reliability, advanced error recovery
 - **I/O**: Previous I/O implementation (90% complete)
-- **Status**: ✅ Production ready - Maximum reliability on both interfaces
-- **Best for**: Users preferring ultimate communication reliability
+- **Status**: ✅ Stable communication, limited I/O
 
-#### `firmware_uart_ultimate.bin` - Ultimate UART + USB Management
-- **Communication**: Enhanced UART with bulletproof USB management layers
-- **Features**: Complete grblHAL + Advanced UART reliability + USB state management
-- **UART**: 256-byte TX buffer, error recovery, connection monitoring  
-- **USB**: Background management for maximum compatibility
-- **Status**: ✅ Production ready - Ultimate UART reliability
-- **Best for**: UART users wanting maximum reliability and error handling
+### **v0.6.0** - `firmware_usb_v0.6.0.bin` / `firmware_uart_v0.6.0.bin`
+- **Stage**: Motion control added
+- **Motion Control**: ✅ Real-time step generation with TIM3
+- **I/O Systems**: ✅ 100% complete
+- **Limitation**: ❌ Spindle and limit interrupt gaps
+- **Status**: ⚠️ Motion works, accessories limited
 
-### 🚀 BULLETPROOF RELEASE (STABLE)
+### **v0.5.0** - `firmware_usb_v0.5.0.bin` / `firmware_uart_v0.5.0.bin`
+- **Stage**: Bulletproof communication
+- **Communication**: Enterprise-grade USB/UART reliability
+- **Features**: Connection state management, transmit buffering, auto-recovery
+- **Motion Control**: ❌ Not implemented (stubs)
+- **Status**: ✅ Rock-solid communication, no motion
 
-#### `firmware_usb_bulletproof.bin` - Enterprise-Grade USB Implementation
-- **Communication**: Bulletproof USB CDC via Micro USB port
-- **Features**: Complete grblHAL + Advanced USB reliability system
-- **USB Reliability**: Connection state management, transmit buffering, auto-recovery
-- **Windows**: Optimized descriptors and enumeration for Windows 10/11
-- **Status**: ✅ Production ready - Handles disconnects, power cycles, driver issues
-- **Best for**: USB users preferring previous bulletproof version
+### **v0.4.0** - `firmware_usb_v0.4.0.bin` / `firmware_uart_v0.4.0.bin`
+- **Stage**: I/O systems complete
+- **I/O Systems**: ✅ All basic I/O fully implemented
+- **Communication**: Native USB/UART
+- **Motion Control**: ❌ Not implemented (stubs)
+- **Status**: ⚠️ Good for I/O testing only
 
-#### `firmware_uart_bulletproof.bin` - Enterprise-Grade UART Implementation
-- **Communication**: UART via TFT connector (PA9/PA10) + USB management layers
-- **Features**: Complete grblHAL + Advanced connection reliability
-- **Status**: ✅ Production ready
-- **Best for**: UART users preferring previous bulletproof version
+### **v0.3.0** - `firmware_usb_v0.3.0.bin` / `firmware_uart_v0.3.0.bin`
+- **Stage**: Complete feature set (without motion)
+- **Features**: Full grblHAL implementation
+- **Communication**: Native USB CDC / UART
+- **Motion Control**: ❌ Limited implementation
+- **Status**: ⚠️ Feature complete but motion limited
 
-### 📦 Previous Stable Versions
-
-#### `firmware_usb_complete.bin` - Full USB Implementation (Stable)
-- **Communication**: Native USB CDC via Micro USB port
-- **Features**: Complete grblHAL implementation with all features
-- **Status**: ✅ Production ready
-- **Best for**: Users who prefer previous stable version
-
-#### `firmware_uart_complete.bin` - Full UART Implementation (Stable)
-- **Communication**: UART via TFT connector (PA9/PA10)  
-- **Features**: Complete grblHAL implementation with all features
-- **Status**: ✅ Production ready
-- **Best for**: UART users who prefer previous stable version
-
-### 🔧 Development Versions
-
-#### `firmware_usb_phase3.bin` / `firmware_uart_phase3.bin`
-- **Features**: Phase 3 advanced features only
+### **v0.2.0** - `firmware_usb_v0.2.0.bin` / `firmware_uart_v0.2.0.bin`
+- **Stage**: Phase 3 advanced features
+- **Features**: Advanced functionality testing
 - **Status**: ⚠️ Experimental - missing core features
-- **Purpose**: Testing advanced functionality
+- **Purpose**: Development and testing
 
-### 📦 Legacy Versions
-
-#### `firmware_usb.bin` / `firmware_uart.bin`
-- **Features**: Basic framework only
+### **v0.1.0** - `firmware_usb_v0.1.0.bin` / `firmware_uart_v0.1.0.bin`
+- **Stage**: Basic framework
+- **Features**: Minimal grblHAL framework
 - **Status**: ❌ Not functional for CNC use
-- **Purpose**: Historical reference only
+- **Purpose**: Historical reference and initial development
 
 ## Installation Instructions
 
