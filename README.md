@@ -42,6 +42,14 @@ A **fully-featured grblHAL driver** for STM32G0 series processors, specifically 
 - [`firmware_usb_complete.bin`](firmware/firmware_usb_complete.bin) - USB connection (recommended)
 - [`firmware_uart_complete.bin`](firmware/firmware_uart_complete.bin) - UART connection
 
+## Documentation
+
+- 📖 **[Quick Start Guide](QUICKSTART.md)** - Get running in 5 minutes
+- 🔌 **[Connection Guide](CONNECTION_GUIDE.md)** - Detailed wiring for CNC use
+- 📐 **[Wiring Diagrams](WIRING_DIAGRAM.md)** - Visual connection reference
+- 🧪 **[Testing Guide](TESTING_GUIDE.md)** - Comprehensive test procedures
+- 💾 **[Firmware Guide](firmware/README.md)** - Version descriptions and updates
+
 ## Quick Start
 
 ### Building with PlatformIO (Recommended)
@@ -151,16 +159,22 @@ This grblHAL driver is released under the [GNU General Public License v3.0](COPY
 - [STM32G0 Documentation](https://www.st.com/en/microcontrollers-microprocessors/stm32g0-series.html)
 - [PlatformIO STM32 Platform](https://docs.platformio.org/en/latest/platforms/ststm32.html)
 
-## Testing
+## Hardware Setup
 
-Comprehensive testing guide available: [TESTING_GUIDE.md](TESTING_GUIDE.md)
+### CNC-Specific Connections
+The BTT SKR Mini E3 v3.0 uses 3D printer terminology. See our **[Connection Guide](CONNECTION_GUIDE.md)** for:
+- Motor connections (X/Y/Z/E0 → CNC axes)
+- Limit switches (X-STOP/Y-STOP/Z-STOP)
+- Spindle control (FAN1/HEAT0 outputs)
+- Coolant control (FAN2/HEAT1 outputs)
+- Probe and control panel wiring
 
-Key test areas:
-1. USB enumeration and communication
-2. Motion control on all axes
-3. Limit switches and homing
-4. Spindle and coolant control
-5. Emergency stop and safety features
+### Visual Wiring
+Check **[Wiring Diagrams](WIRING_DIAGRAM.md)** for:
+- Complete system overview
+- VFD spindle connections
+- Relay module wiring
+- Control panel setup
 
 ## Safety
 
