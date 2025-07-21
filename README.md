@@ -63,10 +63,14 @@ ls .pio/build/BTT_SKR_MINI_E3_V30/firmware.bin
 
 **BTT SKR Mini E3 v3.0 uses SD card bootloader:**
 
-1. Copy `firmware.bin` to SD card root directory
-2. Insert SD card into printer board  
-3. Power cycle the board (firmware auto-updates)
-4. Remove SD card after successful update
+1. Format SD card as FAT32 (max 32GB supported)
+2. Copy firmware file to SD card root directory
+3. **IMPORTANT**: Rename file to exactly `firmware.bin`
+4. Insert SD card into TF card slot on board
+5. Power cycle the board (disconnect and reconnect power)
+6. Board will auto-flash (status LED blinks during update)
+7. Wait ~10 seconds for completion
+8. Remove SD card (file will be renamed to `FIRMWARE.CUR`)
 
 ### Alternative: STM32CubeIDE
 
@@ -171,9 +175,10 @@ Key test areas:
 
 ### USB Not Recognized
 - Use the `firmware_usb_complete.bin` version
-- Ensure data-capable USB cable
-- Try different USB ports
-- Check Windows Device Manager
+- Ensure data-capable Micro USB cable (not charge-only)
+- Try USB 2.0 ports (more compatible than USB 3.0)
+- Windows: Check Device Manager → Ports for "STMicroelectronics Virtual COM Port"
+- May need to install STM32 Virtual COM Port drivers
 
 ### No Motion
 - Verify stepper enable signals (active low)

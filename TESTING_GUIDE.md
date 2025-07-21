@@ -7,13 +7,14 @@ This guide provides comprehensive testing procedures for the STM32G0xx grblHAL i
 
 ### Hardware Required
 - BTT SKR Mini E3 v3.0 board
-- USB-C cable
-- 12-24V power supply
-- Stepper motors (at least 3 for X, Y, Z axes)
-- Limit switches (normally closed recommended)
+- Micro USB cable (data capable)
+- 12-24V power supply (2A minimum)
+- TMC2209 stepper drivers (UART mode)
+- Stepper motors (NEMA 17 typical)
+- Limit switches (NO or NC)
 - Probe (optional but recommended)
-- Emergency stop button (optional but recommended)
-- Multimeter for voltage verification
+- Emergency stop button (optional)
+- Multimeter for testing
 
 ### Software Required
 - gSender (https://sienci.com/gsender/) or similar grbl sender
@@ -30,17 +31,22 @@ This guide provides comprehensive testing procedures for the STM32G0xx grblHAL i
 ## Firmware Installation
 
 ### Method 1: SD Card (Recommended)
-1. Copy `firmware_usb_complete.bin` to SD card root
-2. Rename to `firmware.bin`
-3. Insert SD card into BTT SKR Mini E3 v3.0
-4. Power cycle the board
-5. Board will auto-flash (status LED will blink)
-6. Remove SD card after flashing completes
+1. Format SD card as FAT32 (8GB-32GB recommended)
+2. Copy `firmware_usb_complete.bin` to SD card root
+3. **IMPORTANT**: Rename file to exactly `firmware.bin`
+4. Insert SD card into TF card slot
+5. Power cycle the board (disconnect and reconnect power)
+6. Board will auto-flash (power LED blinks during update)
+7. Wait ~10 seconds for completion
+8. Remove SD card (file will be renamed to FIRMWARE.CUR)
 
-### Method 2: DFU Mode
-1. Connect USB while holding BOOT0 button
-2. Use STM32CubeProgrammer to flash firmware
-3. Reset board after flashing
+### Method 2: USB DFU Mode
+1. Install STM32CubeProgrammer
+2. Connect Micro USB cable
+3. Hold BOOT button while pressing RESET
+4. Device appears as "STM32 BOOTLOADER"
+5. Flash firmware.bin at address 0x08000000
+6. Press RESET to start firmware
 
 ## Test Plan
 
@@ -49,14 +55,16 @@ This guide provides comprehensive testing procedures for the STM32G0xx grblHAL i
 #### 1.1 USB Connection Test
 ```
 Test: USB enumeration and basic communication
-Expected: Device appears as COM port
+Expected: Device appears as Virtual COM Port
 Steps:
-1. Connect USB cable to computer
-2. Check Device Manager (Windows) or ls /dev/tty* (Linux/Mac)
-3. Open gSender or serial terminal
-4. Connect at 115200 baud
-5. Send '?' command
-6. Verify response: <Idle|MPos:0.000,0.000,0.000|...>
+1. Connect Micro USB cable to computer
+2. Windows: Check Device Manager under Ports
+   - Should show "STMicroelectronics Virtual COM Port"
+3. Linux/Mac: ls /dev/tty* (look for /dev/ttyACM0)
+4. Open gSender or serial terminal
+5. Connect at 115200 baud
+6. Send '?' command
+7. Verify response: <Idle|MPos:0.000,0.000,0.000|...>
 
 Pass Criteria:
 - [ ] USB device recognized
@@ -82,12 +90,14 @@ Expected responses documented in each test
 #### 2.1 Limit Switch Test
 ```
 Test: Verify limit switch inputs
-Hardware: Connect limit switches to X, Y, Z limit pins
+Hardware: Connect limit switches to X-STOP, Y-STOP, Z-STOP connectors
 Steps:
-1. Send '?' to check initial state
-2. Manually trigger each limit switch
-3. Send '?' after each trigger
-4. Verify status shows limit triggered
+1. Wire switches: COM to Signal pin, NC/NO to Ground
+2. Send '?' to check initial state
+3. Manually trigger each limit switch
+4. Send '?' after each trigger
+5. Verify status shows Pn:X, Pn:Y, or Pn:Z when triggered
+6. If inverted, adjust with $5 setting
 
 Pass Criteria:
 - [ ] X limit detected when triggered
@@ -115,12 +125,14 @@ Pass Criteria:
 #### 2.3 Probe Test
 ```
 Test: Verify probe input
-Hardware: Connect probe to probe pin (PC14)
+Hardware: Connect probe to PROBE connector
 Steps:
-1. Send G38.2 Z-10 F50 (probe toward workpiece)
-2. Manually trigger probe
-3. Verify motion stops immediately
-4. Check probe position captured
+1. Wire probe: Tool to Signal pin, Workpiece to Ground
+2. Send G38.2 Z-10 F50 (probe toward workpiece)
+3. Touch probe to conductive surface
+4. Verify motion stops immediately
+5. Check probe position captured
+6. If inverted, adjust with $6 setting
 
 Pass Criteria:
 - [ ] Probe triggers stop motion
@@ -188,13 +200,15 @@ Pass Criteria:
 #### 4.1 Spindle Control Test
 ```
 Test: Verify spindle PWM output
-Hardware: Connect oscilloscope or LED to spindle PWM pin (PA1)
+Hardware: Spindle connects to FAN1 (PC6/PC7) and PWM on PA1
 Steps:
-1. M3 S0 - Spindle on, 0 RPM (0% PWM)
-2. M3 S12000 - 50% speed (50% PWM)
-3. M3 S24000 - Max speed (100% PWM)
-4. M5 - Spindle off
-5. Verify PWM duty cycle matches
+1. Connect oscilloscope to PA1 (or LED with resistor)
+2. M3 S0 - Spindle on, 0 RPM (0% PWM)
+3. M3 S12000 - 50% speed (50% PWM)
+4. M3 S24000 - Max speed (100% PWM)
+5. M5 - Spindle off
+6. PC6 = Direction, PC7 = Enable
+7. Verify PWM frequency ~5kHz
 
 Pass Criteria:
 - [ ] PWM signal present on PA1
@@ -205,12 +219,14 @@ Pass Criteria:
 #### 4.2 Coolant Control Test  
 ```
 Test: Verify coolant outputs
-Hardware: Connect LEDs to coolant pins (PC8, PC9)
+Hardware: Coolant connects to FAN2 (PC8) and HEAT1 (PC9)
 Steps:
-1. M7 - Mist on (PC9 high)
-2. M8 - Flood on (PC8 high)
-3. M9 - All coolant off
-4. Verify outputs with multimeter
+1. Connect LEDs with resistors or relay modules
+2. M7 - Mist on (PC9/HEAT1 = high)
+3. M8 - Flood on (PC8/FAN2 = high)
+4. M9 - All coolant off
+5. Verify 3.3V when active
+6. Max current 50mA (use relay for pumps)
 
 Pass Criteria:
 - [ ] M7 activates mist output
@@ -315,10 +331,14 @@ Pass Criteria:
 ## Troubleshooting Guide
 
 ### USB Not Recognized
-1. Check USB cable (must be data capable)
-2. Verify firmware flashed correctly
-3. Try different USB port
-4. Check Device Manager for errors
+1. Check Micro USB cable (must be data capable, not charge-only)
+2. Verify firmware flashed correctly (FIRMWARE.CUR on SD card)
+3. Try different USB port (USB 2.0 preferred)
+4. Windows: Check Device Manager
+   - Look under "Ports (COM & LPT)"
+   - Should show "STMicroelectronics Virtual COM Port"
+   - If "Unknown Device", try reinstalling STM32 VCP drivers
+5. Press RESET button after connecting USB
 
 ### No Motor Movement
 1. Verify motor enable signal
@@ -384,9 +404,9 @@ $24=25.000 (homing feed)
 $25=500.000 (homing seek)
 $26=250 (debounce)
 $27=1.000 (pull-off)
-$100=80 (typical for 16 microstep)
-$101=80
-$102=400 (Z typically different)
+$100=80 (typical for 1/16 microstepping)
+$101=80 (200 steps/rev * 16 microsteps / 40mm)
+$102=400 (leadscrew typically 8mm/rev)
 $110=500 (conservative max)
 $111=500
 $112=500
@@ -437,7 +457,8 @@ Overall Result:          [ ] Pass  [ ] Fail
 
 - grblHAL Wiki: https://github.com/grblHAL/core/wiki
 - gSender Docs: https://resources.sienci.com/view/gs-installation/
-- BTT SKR Mini E3 v3.0 Docs: https://github.com/bigtreetech/BIGTREETECH-SKR-mini-E3
+- BTT SKR Mini E3 v3.0: https://github.com/bigtreetech/BIGTREETECH-SKR-mini-E3/tree/master/hardware/BTT%20SKR%20MINI%20E3%20V3.0
+- BTT Manual: https://github.com/bigtreetech/BIGTREETECH-SKR-mini-E3/blob/master/hardware/BTT%20SKR%20MINI%20E3%20V3.0/Hardware/BTT%20E3%20SKR%20MINI%20V3.0_User%20Manual.pdf
 
 ## Next Steps
 

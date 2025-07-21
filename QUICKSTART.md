@@ -5,16 +5,17 @@ Get your CNC running in 5 minutes!
 ## Step 1: Flash Firmware (1 minute)
 
 1. Download [`firmware_usb_complete.bin`](firmware/firmware_usb_complete.bin)
-2. Copy to SD card and rename to `firmware.bin`
-3. Insert SD card into BTT SKR Mini E3 v3.0
-4. Power on - board will auto-flash (LED blinks)
-5. Remove SD card when done
+2. Format SD card as FAT32 (max 32GB)
+3. Copy firmware to SD card and rename to `firmware.bin`
+4. Insert SD card into TF card slot on board
+5. Power on - board will auto-flash (LED blinks)
+6. Remove SD card when done (file renamed to FIRMWARE.CUR)
 
 ## Step 2: Connect (1 minute)
 
-1. Connect USB-C cable to computer
+1. Connect Micro USB cable to computer
 2. Open gSender (or your preferred grbl sender)
-3. Select COM port that appears
+3. Select COM port that appears (STMicroelectronics Virtual COM Port)
 4. Connect at 115200 baud
 5. You should see "Grbl 1.1" response
 
@@ -64,28 +65,31 @@ $22=0     ; Homing cycle off (until configured)
 ## Wiring Quick Reference
 
 ### Essential Connections
-- **Power**: 12-24V to power input
-- **Motors**: X, Y, Z to respective driver slots
-- **USB**: USB-C to computer
+- **Power**: 12-24V to DC jack or VIN/GND terminals
+- **Motors**: Connect to X, Y, Z, E0 motor connectors
+- **TMC2209**: Install in driver sockets (check orientation!)
+- **USB**: Micro USB to computer
 
 ### Limit Switches (Optional)
-- X Limit → PC0
-- Y Limit → PC1  
-- Z Limit → PC2
-- (Connect between pin and ground)
+- X Limit → X-STOP connector (PC0)
+- Y Limit → Y-STOP connector (PC1)  
+- Z Limit → Z-STOP connector (PC2)
+- Wiring: COM to Signal, NC/NO to Ground
 
 ### Control Buttons (Optional)
-- E-Stop → PC15
-- Feed Hold → PC13
-- Cycle Start → PC12
-- (Connect between pin and ground)
+- Probe → PROBE connector (PC14)
+- E-Stop → PC15 (via EXP1/EXP2)
+- Feed Hold → PC13 (via EXP1/EXP2)
+- Cycle Start → PC12 (via EXP1/EXP2)
+- Wiring: Button between Signal and Ground
 
 ## Common Issues
 
 **USB not detected?**
-- Try different cable (must be data cable)
-- Check Device Manager (Windows)
-- Use firmware_usb_complete.bin
+- Try different Micro USB cable (must be data cable)
+- Check Device Manager for "STMicroelectronics Virtual COM Port"
+- Ensure using firmware_usb_complete.bin (not UART version)
+- Try pressing RESET button after connecting
 
 **Motors not moving?**
 - Check power supply is on
