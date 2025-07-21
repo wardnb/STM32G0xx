@@ -461,13 +461,10 @@ bool driver_init (void)
     
     // Register control system functions
     hal.control.get_state = systemGetState;
+    hal.control.interrupt_callback = NULL; // Will be set by grblHAL core when needed
     
     // Register timer functions
     hal.get_elapsed_ticks = getElapsedTicks;
-
-    // Spindle HAL functions registered above
-
-    hal.control.get_state = systemGetState;
 
     hal.irq_enable = __enable_irq;
     hal.irq_disable = __disable_irq;
@@ -1146,6 +1143,40 @@ bool driver_setup (settings_t *settings)
     GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
     HAL_GPIO_Init(PROBE_PORT, &GPIO_InitStruct);
 #endif
+
+    // Initialize control input pins as regular inputs
+    // EXTI configuration will be handled by grblHAL core when needed
+    GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+    GPIO_InitStruct.Pull = GPIO_PULLUP;
+    GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+
+#if CONTROL_ENABLE & CONTROL_RESET
+    // Reset/Emergency Stop pin (PC15)
+    GPIO_InitStruct.Pin = 1<<15;  // PC15
+    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+#endif
+
+#if CONTROL_ENABLE & CONTROL_FEED_HOLD
+    // Feed Hold pin (PC13)  
+    GPIO_InitStruct.Pin = 1<<13;  // PC13
+    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+#endif
+
+#if CONTROL_ENABLE & CONTROL_CYCLE_START
+    // Cycle Start pin (PC12)
+    GPIO_InitStruct.Pin = 1<<12;  // PC12
+    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+#endif
+
+#if SAFETY_DOOR_ENABLE
+    // Safety Door pin (PC3)
+    GPIO_InitStruct.Pin = 1<<3;   // PC3
+    HAL_GPIO_Init(GPIOC, &GPIO_InitStruct);
+#endif
+    
+    // Configure NVIC for control pin interrupts (will be enabled by grblHAL when needed)
+    HAL_NVIC_SetPriority(EXTI4_15_IRQn, 2, 0);
+    HAL_NVIC_SetPriority(EXTI2_3_IRQn, 2, 0);
     
     return true;
 }
@@ -1325,5 +1356,25 @@ void EXTI2_3_IRQHandler(void)
         // Max limits not used on this board
         
         hal.limits.interrupt_callback(limit_state);
+    }
+    
+    // Handle control signal (safety door) callback if PC3 triggered
+    if (hal.control.interrupt_callback) {
+        hal.control.interrupt_callback(systemGetState());
+    }
+}
+
+// Control signal interrupt handler for safety systems
+void EXTI4_15_IRQHandler(void)
+{
+    // Handle control signal interrupts (PC12-PC15: Cycle Start, Feed Hold, Reset/E-Stop)
+    // Use HAL generic interrupt handler for proper flag clearing
+    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_12);  // Cycle Start
+    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_13);  // Feed Hold
+    HAL_GPIO_EXTI_IRQHandler(GPIO_PIN_15);  // Reset/Emergency Stop
+    
+    // Call grblHAL control interrupt callback with current state
+    if (hal.control.interrupt_callback) {
+        hal.control.interrupt_callback(systemGetState());
     }
 }
