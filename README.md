@@ -1,6 +1,6 @@
 # grblHAL driver for STM32G0xx processors
 
-A grblHAL driver for STM32G0 series processors, specifically targeting the **BTT SKR Mini E3 v3.0** board with STM32G0B1RET6 microcontroller.
+A **fully-featured grblHAL driver** for STM32G0 series processors, specifically targeting the **BTT SKR Mini E3 v3.0** board with STM32G0B1RET6 microcontroller. This implementation includes complete motion control, USB/UART communication, and all essential CNC features for compatibility with gSender and other grbl controllers.
 
 ## Supported Hardware
 
@@ -10,12 +10,37 @@ A grblHAL driver for STM32G0 series processors, specifically targeting the **BTT
 
 ## Features
 
-- **Real-time CNC control** optimized for STM32G0 architecture
-- **TMC2209 UART stepper drivers** - Silent operation with advanced features
-- **USB CDC & UART communication** - Multiple interface options
-- **Bootloader support** - SD card firmware updates (32KB offset)
-- **Plugin architecture** - Modular extensions (EEPROM, trinamic, motors, etc.)
-- **Pin-optimized GPIO** - No bitband dependency (G0 limitation handled)
+### Core Functionality ✅
+- **Real-time CNC control** - Hardware step generation via STM32 timers
+- **USB CDC communication** - Fixed enumeration for Windows compatibility
+- **UART communication** - Alternative connection at 115200 baud
+- **Complete motion control** - Acceleration planning and smooth trajectories
+- **TMC2209 stepper drivers** - UART configuration with advanced features
+- **Hardware interrupts** - Limit switches and control inputs
+
+### Implemented Features ✅
+- **Limit switches** - Hardware debouncing and interrupt-driven
+- **Emergency stop** - Real-time halt with proper deceleration
+- **Probe support** - G38.x commands for tool length and surface detection
+- **Spindle control** - PWM speed control (M3/M5/S commands)
+- **Coolant control** - Flood and mist outputs (M7/M8/M9)
+- **Control inputs** - Feed hold, cycle start, reset buttons
+- **I2C support** - For accessories and expansion
+- **Backlash compensation** - Improved accuracy on all axes
+- **Advanced safety** - Thermal monitoring and spindle feedback
+
+### gSender Compatibility ✅
+- Full G-code support (G0, G1, G2, G3, etc.)
+- Real-time status reporting
+- Jogging and homing cycles
+- Workspace coordinates (G54-G59)
+- Tool change support
+
+## Firmware Downloads
+
+**Pre-built firmware binaries are available:**
+- [`firmware_usb_complete.bin`](firmware/firmware_usb_complete.bin) - USB connection (recommended)
+- [`firmware_uart_complete.bin`](firmware/firmware_uart_complete.bin) - UART connection
 
 ## Quick Start
 
@@ -122,5 +147,45 @@ This grblHAL driver is released under the [GNU General Public License v3.0](COPY
 - [STM32G0 Documentation](https://www.st.com/en/microcontrollers-microprocessors/stm32g0-series.html)
 - [PlatformIO STM32 Platform](https://docs.platformio.org/en/latest/platforms/ststm32.html)
 
+## Testing
+
+Comprehensive testing guide available: [TESTING_GUIDE.md](TESTING_GUIDE.md)
+
+Key test areas:
+1. USB enumeration and communication
+2. Motion control on all axes
+3. Limit switches and homing
+4. Spindle and coolant control
+5. Emergency stop and safety features
+
+## Safety
+
+⚠️ **IMPORTANT**: 
+- Always have emergency stop accessible
+- Test without tools/spindle first
+- Start with low speeds and acceleration
+- Verify all connections before power on
+- Use proper current limiting on stepper drivers
+
+## Troubleshooting
+
+### USB Not Recognized
+- Use the `firmware_usb_complete.bin` version
+- Ensure data-capable USB cable
+- Try different USB ports
+- Check Windows Device Manager
+
+### No Motion
+- Verify stepper enable signals (active low)
+- Check motor driver current settings
+- Confirm step/mm calibration ($100-$102)
+- Test with lower speeds
+
+### Limit Switches
+- Default expects normally open (NO) switches
+- Use $5 to invert if using normally closed (NC)
+- Verify with ? status command
+
 ---
-*Initial implementation: 2025-01-20*
+*Version 1.0.0 - 2025-01-21*
+*Full grblHAL implementation with essential CNC features*
