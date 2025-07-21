@@ -47,6 +47,7 @@ A **fully-featured grblHAL driver** for STM32G0 series processors, specifically 
 - 📖 **[Quick Start Guide](QUICKSTART.md)** - Get running in 5 minutes
 - 🔌 **[Connection Guide](CONNECTION_GUIDE.md)** - Detailed wiring for CNC use
 - 📐 **[Wiring Diagrams](WIRING_DIAGRAM.md)** - Visual connection reference
+- ⚠️ **[E-Stop Wiring](ESTOP_WIRING.md)** - CRITICAL safety system setup
 - 🧪 **[Testing Guide](TESTING_GUIDE.md)** - Comprehensive test procedures
 - 💾 **[Firmware Guide](firmware/README.md)** - Version descriptions and updates
 
@@ -178,8 +179,10 @@ Check **[Wiring Diagrams](WIRING_DIAGRAM.md)** for:
 
 ## Safety
 
-⚠️ **IMPORTANT**: 
+⚠️ **CRITICAL SAFETY**: 
+- **E-Stop MUST cut power physically** - See [ESTOP_WIRING.md](ESTOP_WIRING.md)
 - Always have emergency stop accessible
+- Test E-stop functionality daily
 - Test without tools/spindle first
 - Start with low speeds and acceleration
 - Verify all connections before power on

@@ -100,15 +100,26 @@ PC7 → Relay/MOSFET Enable
 
 | Function | Suggested Connection | Pin | Notes |
 |----------|---------------------|-----|-------|
-| **E-Stop** | EXP1 or External | PC15 | Critical safety |
-| **Feed Hold** | EXP1 Pin | PC13 | Pause button |
-| **Cycle Start** | EXP1 Pin | PC12 | Resume button |
+| **E-Stop** | See dedicated guide | PC15 | ⚠️ CRITICAL - Hardware power cut required |
+| **Feed Hold** | EXP1 Pin | PC13 | Pause button (momentary NO) |
+| **Cycle Start** | EXP1 Pin | PC12 | Resume button (momentary NO) |
 | **Reset** | Reset button on board | NRST | System reset |
 
-**Panel Wiring**:
-- Momentary switches (NO type)
+### ⚠️ EMERGENCY STOP - CRITICAL SAFETY
+
+**DO NOT rely on software-only E-stop!**
+
+The E-stop must:
+1. **Cut motor power physically** (via contactor)
+2. **Stop spindle immediately** 
+3. **Signal the board** for software awareness
+
+See **[ESTOP_WIRING.md](ESTOP_WIRING.md)** for complete safety implementation.
+
+**Basic Control Wiring**:
+- Feed Hold/Cycle Start: Momentary switches (NO type)
 - Wire between pin and GND
-- Add external pull-up if needed
+- Built-in pull-ups enabled
 
 ## Power Connections
 
@@ -194,13 +205,16 @@ The board expects TMC2209 drivers in UART mode:
 
 ## Safety Considerations
 
-⚠️ **CRITICAL SAFETY**:
+⚠️ **CRITICAL SAFETY** - Read [ESTOP_WIRING.md](ESTOP_WIRING.md) first!
 
-1. **E-Stop** must cut motor power externally
+1. **E-Stop** MUST cut motor power via hardware contactor
 2. **Limit switches** should be NC (fail-safe)
-3. **Spindle relay** should default to OFF
-4. **Use fuses** on high-current outputs
-5. **Ground** the machine frame properly
+3. **Spindle safety** - E-stop must kill spindle too
+4. **Power isolation** - Use contactors, not just relays
+5. **Redundancy** - Hardware + software protection
+6. **Testing** - Test E-stop daily!
+7. **Ground** the machine frame properly
+8. **Fuses** on all high-current circuits
 
 ## Wiring Best Practices
 
