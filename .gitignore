@@ -11,6 +11,9 @@
 *.map
 *.lst
 
+# But allow firmware folder
+!firmware/*.bin
+
 # Temporary files
 *.tmp
 *.bak
