@@ -39,8 +39,10 @@ A **fully-featured grblHAL driver** for STM32G0 series processors, specifically 
 ## Firmware Downloads
 
 **Pre-built firmware binaries are available:**
-- [`firmware_usb_complete.bin`](firmware/firmware_usb_complete.bin) - USB connection (recommended)
-- [`firmware_uart_complete.bin`](firmware/firmware_uart_complete.bin) - UART connection
+- [`firmware_usb_bulletproof.bin`](firmware/firmware_usb_bulletproof.bin) - **NEW**: Bulletproof USB (RECOMMENDED)
+- [`firmware_uart_bulletproof.bin`](firmware/firmware_uart_bulletproof.bin) - **NEW**: Bulletproof UART  
+- [`firmware_usb_complete.bin`](firmware/firmware_usb_complete.bin) - USB connection (stable)
+- [`firmware_uart_complete.bin`](firmware/firmware_uart_complete.bin) - UART connection (stable)
 
 ## Testing & Configuration Tools
 
