@@ -42,6 +42,11 @@ A **fully-featured grblHAL driver** for STM32G0 series processors, specifically 
 - [`firmware_usb_complete.bin`](firmware/firmware_usb_complete.bin) - USB connection (recommended)
 - [`firmware_uart_complete.bin`](firmware/firmware_uart_complete.bin) - UART connection
 
+## Testing & Configuration Tools
+
+- 🧙‍♂️ **[CNC Setup Wizard](tools/CNC_WIZARD_README.md)** - Interactive testing and calibration tool
+- 🔧 **[Testing Tools](tools/)** - Complete suite of diagnostic and setup utilities
+
 ## Documentation
 
 - 📖 **[Quick Start Guide](QUICKSTART.md)** - Get running in 5 minutes
