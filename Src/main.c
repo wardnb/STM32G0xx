@@ -25,9 +25,10 @@
 #include "driver.h"
 #include "grbl/grbllib.h"
 
-#if USB_SERIAL_CDC
-#include "usb_device.h"
-#endif
+// Disable USB for now
+// #if USB_SERIAL_CDC
+// #include "usb_device.h"
+// #endif
 
 __IO uint32_t uwTick;
 
@@ -36,16 +37,21 @@ static void GPIO_Init(void);
 
 int main(void)
 {
-    HAL_Init();
+    // HAL_Init();  // Stub
 
-    SystemClock_Config();
+    // SystemClock_Config();  // Disable for now
 
-    GPIO_Init();
+    // GPIO_Init();  // Disable for now
+    
+    // Initialize UART stubs
+    extern bool uart_init(void);
+    uart_init();
 
-#if USB_SERIAL_CDC
-    // Initialize USB Device for CDC communication
-    MX_USB_DEVICE_Init();
-#endif
+    // Disable USB for now
+    // #if USB_SERIAL_CDC
+    //     // Initialize USB Device for CDC communication
+    //     MX_USB_DEVICE_Init();
+    // #endif
 
     // Initialize the driver
     if(!driver_init())
