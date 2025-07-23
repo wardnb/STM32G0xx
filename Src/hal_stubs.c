@@ -252,24 +252,121 @@ int HAL_UARTEx_DisableFifoMode(UART_HandleTypeDef *huart) {
 }
 
 // Additional missing HAL functions
+// HAL Status definitions  
+#define HAL_OK      0x00U
+#define HAL_ERROR   0x01U
+#define HAL_BUSY    0x02U
+#define HAL_TIMEOUT 0x03U
+
+// Enhanced HAL functions for proper boot sequence
 int HAL_Init(void) {
-    return 0; // HAL_OK
+    // Initialize HAL but DO NOT enable SysTick in simulation
+    // Real hardware would configure SysTick here, but in simulation
+    // we want to avoid timer interrupts that cause CPU abort
+    return HAL_OK;
 }
+
+// SystemCoreClockUpdate is already defined in system_stm32g0xx.c - removed duplicate
 
 int HAL_PWREx_ControlVoltageScaling(uint32_t VoltageScaling) {
     (void)VoltageScaling;
-    return 0; // HAL_OK
+    // Voltage scaling configuration successful
+    return HAL_OK;
 }
 
 int HAL_RCC_OscConfig(void *RCC_OscInitStruct) {
     (void)RCC_OscInitStruct;
-    return 0; // HAL_OK
+    // Clock oscillator configuration successful
+    return HAL_OK;
 }
 
 int HAL_RCC_ClockConfig(void *RCC_ClkInitStruct, uint32_t FLatency) {
     (void)RCC_ClkInitStruct;
     (void)FLatency;
-    return 0; // HAL_OK
+    // Clock configuration successful
+    return HAL_OK;
+}
+
+// Error_Handler is already defined in main.c - removed duplicate
+
+// Add GPIO clock enable functions (commonly called during initialization)
+void __HAL_RCC_GPIOA_CLK_ENABLE(void) {
+    // Enable GPIOA clock
+}
+
+void __HAL_RCC_GPIOB_CLK_ENABLE(void) {
+    // Enable GPIOB clock  
+}
+
+void __HAL_RCC_GPIOC_CLK_ENABLE(void) {
+    // Enable GPIOC clock
+}
+
+void __HAL_RCC_GPIOD_CLK_ENABLE(void) {
+    // Enable GPIOD clock
+}
+
+void __HAL_RCC_USART1_CLK_ENABLE(void) {
+    // Enable USART1 clock
+}
+
+void __HAL_RCC_USB_CLK_ENABLE(void) {
+    // Enable USB clock
+}
+
+// UART functions already defined earlier in this file - removed duplicates
+
+// HAL Tick functions already defined above - removed duplicates
+
+void HAL_Delay(uint32_t Delay) {
+    // Simple delay implementation
+    (void)Delay;
+    // In simulation, just return immediately
+}
+
+// Critical System Interrupt Handlers
+// These prevent CPU abort when interrupts fire during boot
+
+// SysTick_Handler is likely already defined in driver.c - removed duplicate
+
+void HardFault_Handler(void) {
+    // Hard fault handler - important for debugging
+    while(1) {
+        // Hang here for debugging
+    }
+}
+
+void NMI_Handler(void) {
+    // Non-maskable interrupt handler
+    while(1) {
+        // Hang here for debugging  
+    }
+}
+
+// System call handlers
+void SVC_Handler(void) {
+    // Supervisor call handler
+}
+
+void PendSV_Handler(void) {
+    // PendSV handler
+}
+
+// Default_Handler is already defined in startup file - removed duplicate
+
+// Only add interrupt handlers that are NOT already defined in the firmware
+// The firmware already has USART1, TIM2, EXTI handlers, etc.
+
+void USB_IRQHandler(void) {
+    // USB interrupt handler (if not defined elsewhere)
+}
+
+void RCC_IRQHandler(void) {
+    // RCC interrupt handler
+}
+
+void DMA1_Channel1_IRQHandler(void) {
+    // DMA Channel 1 interrupt handler
 }
 
 // Board initialization stub (required by driver.c)
