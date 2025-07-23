@@ -1,0 +1,62 @@
+// BTT SKR Mini E3 v3.0 board platform description for Renode
+// Based on STM32G0B1RET6 microcontroller
+// grblHAL CNC controller firmware
+
+using "./stm32g0b1.repl"
+
+// Define board-specific connections
+
+// TMC2209 UART connections
+// Note: TMC2209 drivers are not directly emulated but UART communication is
+uart2:
+    TX -> gpioPortC@10  // UART2_TX to PC10
+    RX -> gpioPortC@11  // UART2_RX from PC11
+
+// Limit switch connections
+gpioPortC:
+    0 -> exti@0     // X_LIMIT_PIN
+    1 -> exti@1     // Y_LIMIT_PIN  
+    2 -> exti@2     // Z_LIMIT_PIN
+    3 -> exti@3     // SAFETY_DOOR_PIN
+    12 -> exti@12   // CYCLE_START_PIN
+    13 -> exti@13   // FEED_HOLD_PIN
+    14 -> exti@14   // PROBE_PIN
+    15 -> exti@15   // RESET_PIN (E-stop)
+
+// Step/Direction outputs
+gpioPortB:
+    0 [0-15] -> led@0   // Z_STEP_PIN (LED for visual feedback)
+    10 [0-15] -> led@1  // Y_STEP_PIN
+    13 [0-15] -> led@2  // X_STEP_PIN
+
+// I2C for EEPROM and keypad (on EXP1 connector)
+i2c1:
+    -> gpioPortB@8  // I2C1_SCL
+    -> gpioPortB@9  // I2C1_SDA
+
+// SPI for SD Card
+spi1:
+    MOSI -> gpioPortA@7
+    MISO <- gpioPortA@6
+    SCK -> gpioPortA@5
+    
+gpioPortA:
+    4 -> spi1@CS    // SD Card chip select
+
+// Spindle PWM output (TIM2_CH2)
+timer2:
+    -> gpioPortA@1  // SPINDLE_PWM_PIN
+
+// USB CDC connection
+usbDevice: USB.STM32G0_USB @ sysbus 0x40005C00
+    -> nvic@8
+
+// Visual feedback LEDs for step pulses
+led0: Miscellaneous.LED @ gpioPortB 0
+led1: Miscellaneous.LED @ gpioPortB 10  
+led2: Miscellaneous.LED @ gpioPortB 13
+
+// Machine configuration
+machine:
+    name: "BTT SKR Mini E3 v3.0"
+    SystemClockFrequency: 64000000

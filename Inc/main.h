@@ -27,6 +27,11 @@
 #include "stm32g0xx.h"
 #include "stm32g0xx_hal.h"
 
+/* Global variable declarations */
+extern TIM_HandleTypeDef htim6;
+
+/* Function prototypes */
 void Error_Handler(void);
+void SystemClock_Config(void);
 
 #endif // __MAIN_H__

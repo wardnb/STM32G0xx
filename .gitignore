@@ -12,7 +12,7 @@
 *.lst
 
 # But allow firmware folder
-!firmware/*.bin
+!firmware/*
 
 # Temporary files
 *.tmp

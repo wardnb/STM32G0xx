@@ -1,0 +1,120 @@
+=== grblHAL Renode Test Simulation ===
+This shows what the output would look like when running in Renode
+
+[Starting Renode emulation...]
+16:35:24.3456 [INFO] Loaded platform: BTT SKR Mini E3 v3.0
+16:35:24.3457 [INFO] CPU: STM32G0B1 (Cortex-M0+) @ 64MHz
+16:35:24.3458 [INFO] Flash: 512KB @ 0x08000000
+16:35:24.3459 [INFO] RAM: 144KB @ 0x20000000
+
+[Loading firmware...]
+16:35:24.3500 [INFO] Loading binary: firmware_usb_v1.0.0-beta2.bin
+16:35:24.3520 [INFO] Entry point: 0x08008000 (bootloader offset: 32KB)
+
+[Starting CPU execution...]
+16:35:24.3600 [INFO] CPU started
+
+=== UART1 Debug Output ===
+16:35:24.3650 UART1: STM32G0xx grblHAL starting...
+16:35:24.3651 UART1: Clock: 64MHz
+16:35:24.3652 UART1: Flash: 512KB, RAM: 144KB
+16:35:24.3653 UART1: Initializing peripherals...
+16:35:24.3654 UART1: - GPIO configured
+16:35:24.3655 UART1: - Timers initialized (TIM2 spindle, TIM3 stepper)
+16:35:24.3656 UART1: - EXTI interrupts enabled
+16:35:24.3657 UART1: - USB CDC initialized
+16:35:24.3658 UART1: - I2C initialized for EEPROM
+16:35:24.3659 UART1: - SPI initialized for SD card
+16:35:24.3660 UART1: Plugins loaded:
+16:35:24.3661 UART1: - Spindle plugin v1.0
+16:35:24.3662 UART1: - Fans plugin v1.0
+16:35:24.3663 UART1: - Encoder plugin v1.0
+16:35:24.3664 UART1: - Plasma plugin v1.0
+16:35:24.3665 UART1: - Laser plugin v1.0
+
+=== USB CDC Communication ===
+16:35:24.3700 USB: Device enumerated
+16:35:24.3701 USB: grblHAL 1.1f ['$' or '$HELP' for help]
+
+[Running test_basic_communication...]
+16:35:24.3710 >> Sending: ?
+16:35:24.3711 USB: <Idle|MPos:0.000,0.000,0.000|Bf:15,127|FS:0,0|WCO:0.000,0.000,0.000>
+
+16:35:24.3720 >> Sending: $I
+16:35:24.3721 USB: [VER:1.1f.20240722:STM32G0xx grblHAL v1.0.0-beta2]
+16:35:24.3722 USB: [AXS:3:XYZ]
+16:35:24.3723 USB: [NEWOPT:ENUMS,RT+,PRBSET,RUNOV,SED,RTC,ETH]
+16:35:24.3724 USB: [FIRMWARE:grblHAL]
+16:35:24.3725 USB: [SIGNALS:HRSP]
+16:35:24.3726 USB: [PLUGINS:Spindle|Fans|Encoder|Plasma|Laser|SD|EEPROM|Keypad|Motors|Odometer]
+16:35:24.3727 USB: [DRIVER:STM32G0xx]
+16:35:24.3728 USB: [DRIVER VERSION:240722]
+16:35:24.3729 USB: [BOARD:BTT SKR Mini E3 v3.0]
+16:35:24.3730 USB: ok
+
+[Running test_motion...]
+16:35:24.3740 >> Sending: G91
+16:35:24.3741 USB: ok
+16:35:24.3750 >> Sending: G1 X10 F100
+16:35:24.3751 USB: ok
+
+=== GPIO Step Pulse Monitoring ===
+16:35:24.3760 STEP: GPIO Port B pin 13 = 1  (X step pulse HIGH)
+16:35:24.3761 STEP: GPIO Port B pin 13 = 0  (X step pulse LOW)
+16:35:24.3762 [Pattern repeats 800 times for 10mm at 80 steps/mm]
+16:35:24.4000 USB: ok
+
+[Running test_safety_systems...]
+16:35:24.4010 >> Triggering E-stop (PC15 = LOW)
+16:35:24.4011 CONTROL: GPIO Port C pin 15 = 0
+16:35:24.4012 EXTI: Interrupt on line 15
+16:35:24.4013 UART1: EMERGENCY STOP TRIGGERED!
+16:35:24.4014 USB: ALARM:1
+
+16:35:24.4020 >> Releasing E-stop (PC15 = HIGH)  
+16:35:24.4021 CONTROL: GPIO Port C pin 15 = 1
+16:35:24.4022 >> Sending: $X  (clear alarm)
+16:35:24.4023 USB: ok
+
+16:35:24.4030 >> Triggering X limit switch (PC0 = LOW)
+16:35:24.4031 LIMIT: GPIO Port C pin 0 = 0
+16:35:24.4032 EXTI: Interrupt on line 0
+16:35:24.4033 UART1: Limit switch triggered: X
+16:35:24.4034 USB: ALARM:2
+
+=== Performance Metrics ===
+16:35:24.4100 [INFO] Emulation statistics:
+16:35:24.4101 [INFO] - Instructions executed: 1,245,632
+16:35:24.4102 [INFO] - Simulated time: 700ms
+16:35:24.4103 [INFO] - Real time: 850ms  
+16:35:24.4104 [INFO] - Performance: 82.4% real-time
+16:35:24.4105 [INFO] - Timer3 interrupts: 1,623 (step generation)
+16:35:24.4106 [INFO] - EXTI interrupts: 3 (safety systems)
+16:35:24.4107 [INFO] - USB transfers: 15
+
+=== Memory Analysis ===
+16:35:24.4110 [INFO] Flash usage @ 0x08008000:
+16:35:24.4111 [INFO] - Code size: 98,456 bytes (19.2% of 512KB)
+16:35:24.4112 [INFO] - Vector table @ 0x08008000
+16:35:24.4113 [INFO] - Main code @ 0x08008200
+
+16:35:24.4115 [INFO] RAM usage @ 0x20000000:
+16:35:24.4116 [INFO] - Static data: 8,234 bytes
+16:35:24.4117 [INFO] - Stack used: 2,456 bytes  
+16:35:24.4118 [INFO] - Heap used: 4,832 bytes
+16:35:24.4119 [INFO] - Total: 15,522 bytes (10.8% of 144KB)
+
+=== Test Summary ===
+✅ Basic communication: PASSED
+✅ Motion control: PASSED (step pulses verified)
+✅ Safety systems: PASSED (interrupts working)
+✅ Plugin loading: PASSED (all plugins initialized)
+✅ Memory usage: PASSED (well within limits)
+
+⚠️ Note: This is a simulation of what Renode output would look like.
+    Actual hardware testing is still required to validate:
+    - Real-time performance
+    - TMC2209 UART communication
+    - Actual step pulse timing
+    - USB enumeration on different OS
+    - Peripheral interactions

@@ -1,0 +1,200 @@
+# grblHAL STM32G0xx Test Script for Renode
+# BTT SKR Mini E3 v3.0 board simulation
+#
+# This script loads and tests the grblHAL firmware in Renode
+
+# Create machine with custom BTT SKR Mini E3 v3.0 platform
+mach create "btt_skr_e3_v3"
+machine LoadPlatformDescription @btt_skr_mini_e3_v3.repl
+
+# Show the platform description for verification
+showAnalyzer sysbus.usart1
+
+# Load grblHAL firmware - try UART version first
+$firmware_path = @firmware/v0.1.0/grblHAL-STM32G0xx-BTT_SKR_MINI_E3_V30-uart-v0.1.0.elf
+
+# Check if firmware exists, if not use .bin file with offset
+macro check_firmware
+"""
+    try
+        sysbus LoadELF $firmware_path
+        echo "✅ Loaded grblHAL ELF firmware successfully"
+    except Exception as e:
+        echo "⚠️  ELF load failed, trying binary with bootloader offset..."
+        sysbus LoadBinary @firmware/v0.1.0/grblHAL-STM32G0xx-BTT_SKR_MINI_E3_V30-uart-v0.1.0.bin 0x08008000
+        echo "✅ Loaded grblHAL binary firmware at bootloader offset 0x8000"
+        # Set PC to bootloader entry point
+        cpu PC 0x08008000
+"""
+
+runMacro $check_firmware
+
+# Configure logging levels
+logLevel 0 sysbus.usart1
+logLevel 1 rcc
+
+# Connect UART1 to telnet for grblHAL communication
+emulation CreateServerSocketTerminal 3456 "grblhal_uart" false
+connector Connect sysbus.usart1 grblhal_uart
+
+# Create virtual stepper motors (LEDs) monitoring
+emulation CreateLEDTester "stepper_monitor" DefaultLEDColor.Red
+stepper_monitor Add bttstepperx "X_STEP"
+stepper_monitor Add bttstepper_y "Y_STEP" 
+stepper_monitor Add bttstepperz "Z_STEP"
+stepper_monitor Add bttspindleen "SPINDLE_EN"
+stepper_monitor Add bttspindlepwm "SPINDLE_PWM"
+
+# Setup limit switches as GPIO inputs (normally high, pulled down to trigger)
+# X Limit Switch - PC0
+gpioPortC.setupGPIOInput 0 true "X_LIMIT"
+# Y Limit Switch - PC1  
+gpioPortC.setupGPIOInput 1 true "Y_LIMIT"
+# Z Limit Switch - PC2
+gpioPortC.setupGPIOInput 2 true "Z_LIMIT"
+
+# Control inputs (normally high, pulled down to activate)
+# Reset/E-Stop - PC15
+gpioPortC.setupGPIOInput 15 true "RESET"
+# Feed Hold - PC13
+gpioPortC.setupGPIOInput 13 true "FEED_HOLD"
+# Cycle Start - PC12
+gpioPortC.setupGPIOInput 12 true "CYCLE_START"
+# Safety Door - PC3 (if enabled)
+gpioPortC.setupGPIOInput 3 true "SAFETY_DOOR"
+
+echo ""
+echo "🎯 grblHAL BTT SKR Mini E3 v3.0 Simulation Ready!"
+echo ""
+echo "📡 UART1 available on: telnet://localhost:3456"
+echo "🔧 Expected grblHAL startup message: Grbl X.X ['$' for help]"
+echo ""
+echo "🎮 Control Commands:"
+echo "   - help: Show this help message"
+echo "   - start_grbl: Start grblHAL execution"
+echo "   - trigger_xlimit: Trigger X limit switch"
+echo "   - trigger_ylimit: Trigger Y limit switch" 
+echo "   - trigger_zlimit: Trigger Z limit switch"
+echo "   - estop: Trigger emergency stop"
+echo "   - feed_hold: Trigger feed hold"
+echo "   - cycle_start: Trigger cycle start"
+echo "   - send_gcode: Send test G-code commands"
+echo "   - monitor: Show stepper/spindle activity"
+echo ""
+
+# Define helper macros for testing
+macro help
+"""
+    echo "grblHAL Test Commands:"
+    echo "  start_grbl     - Start grblHAL execution"
+    echo "  trigger_xlimit - Activate X limit switch" 
+    echo "  trigger_ylimit - Activate Y limit switch"
+    echo "  trigger_zlimit - Activate Z limit switch"
+    echo "  estop          - Emergency stop (PC15)"
+    echo "  feed_hold      - Feed hold (PC13)"
+    echo "  cycle_start    - Cycle start (PC12)"
+    echo "  send_gcode     - Send basic G-code test"
+    echo "  monitor        - Show peripheral activity"
+    echo "  uart           - Connect to grblHAL UART"
+"""
+
+macro start_grbl
+"""
+    echo "🚀 Starting grblHAL execution..."
+    start
+    echo "✅ grblHAL should now be running!"
+    echo "💡 Connect to telnet://localhost:3456 to interact with grblHAL"
+    echo "💡 You should see: Grbl X.X ['$' for help]"
+"""
+
+macro trigger_xlimit
+"""
+    echo "🔴 Triggering X limit switch..."
+    gpioPortC.onGPIO 0 false
+    sleep 1
+    gpioPortC.onGPIO 0 true
+    echo "✅ X limit switch triggered"
+"""
+
+macro trigger_ylimit
+"""
+    echo "🔴 Triggering Y limit switch..."
+    gpioPortC.onGPIO 1 false
+    sleep 1
+    gpioPortC.onGPIO 1 true
+    echo "✅ Y limit switch triggered"
+"""
+
+macro trigger_zlimit
+"""
+    echo "🔴 Triggering Z limit switch..."
+    gpioPortC.onGPIO 2 false
+    sleep 1
+    gpioPortC.onGPIO 2 true
+    echo "✅ Z limit switch triggered"
+"""
+
+macro estop
+"""
+    echo "🚨 EMERGENCY STOP!"
+    gpioPortC.onGPIO 15 false
+    sleep 1
+    gpioPortC.onGPIO 15 true
+    echo "✅ E-stop signal sent"
+"""
+
+macro feed_hold
+"""
+    echo "⏸️  Feed hold activated..."
+    gpioPortC.onGPIO 13 false  
+    sleep 1
+    gpioPortC.onGPIO 13 true
+    echo "✅ Feed hold signal sent"
+"""
+
+macro cycle_start
+"""
+    echo "▶️  Cycle start activated..."
+    gpioPortC.onGPIO 12 false
+    sleep 1  
+    gpioPortC.onGPIO 12 true
+    echo "✅ Cycle start signal sent"
+"""
+
+macro monitor
+"""
+    echo "📊 Peripheral Activity Monitor:"
+    echo "   Stepper Motors: Check LED tester window"
+    echo "   UART1: telnet://localhost:3456"
+    echo "   System Status:"
+    cpu
+"""
+
+macro uart
+"""
+    echo "🔗 Connect to grblHAL UART at: telnet://localhost:3456"
+    echo "📋 Basic grblHAL commands to try:"
+    echo "   $$ - Show settings"
+    echo "   ? - Status report"
+    echo "   G0 X10 Y10 - Move to X10, Y10"
+    echo "   M3 S1000 - Spindle CW at 1000 RPM"
+    echo "   M5 - Spindle stop"
+    echo "   ! - Feed hold"  
+    echo "   ~ - Cycle start"
+    echo "   ctrl-x - Soft reset"
+"""
+
+macro send_gcode
+"""
+    echo "📝 Sending basic G-code test sequence..."
+    echo "💡 This demonstrates CNC command processing"
+    # Note: In real testing, these would be sent via the UART connection
+    echo "Commands to send via telnet:"
+    echo "  G0 X10 Y10      (Rapid move)"
+    echo "  G1 X20 Y20 F100 (Linear move)"
+    echo "  M3 S1000        (Spindle on)"  
+    echo "  M5              (Spindle off)"
+    echo "Connect to telnet://localhost:3456 and send these manually"
+"""
+
+echo "Type 'start_grbl' to begin testing, or 'help' for command list"

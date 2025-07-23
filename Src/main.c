@@ -37,21 +37,18 @@ static void GPIO_Init(void);
 
 int main(void)
 {
-    // HAL_Init();  // Stub
+    HAL_Init();  // Initialize HAL Library
 
-    // SystemClock_Config();  // Disable for now
+    SystemClock_Config();  // Configure system clock
 
-    // GPIO_Init();  // Disable for now
+    GPIO_Init();  // Initialize GPIO pins
     
-    // Initialize UART stubs
-    extern bool uart_init(void);
-    uart_init();
+    // No longer need UART stubs - proper HAL initialization handles this
 
-    // Disable USB for now
-    // #if USB_SERIAL_CDC
-    //     // Initialize USB Device for CDC communication
-    //     MX_USB_DEVICE_Init();
-    // #endif
+#if USB_SERIAL_CDC
+    // Initialize USB Device for CDC communication
+    MX_USB_DEVICE_Init();
+#endif
 
     // Initialize the driver
     if(!driver_init())

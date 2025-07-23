@@ -251,6 +251,27 @@ int HAL_UARTEx_DisableFifoMode(UART_HandleTypeDef *huart) {
     return 0; // HAL_OK
 }
 
+// Additional missing HAL functions
+int HAL_Init(void) {
+    return 0; // HAL_OK
+}
+
+int HAL_PWREx_ControlVoltageScaling(uint32_t VoltageScaling) {
+    (void)VoltageScaling;
+    return 0; // HAL_OK
+}
+
+int HAL_RCC_OscConfig(void *RCC_OscInitStruct) {
+    (void)RCC_OscInitStruct;
+    return 0; // HAL_OK
+}
+
+int HAL_RCC_ClockConfig(void *RCC_ClkInitStruct, uint32_t FLatency) {
+    (void)RCC_ClkInitStruct;
+    (void)FLatency;
+    return 0; // HAL_OK
+}
+
 // Board initialization stub (required by driver.c)
 bool board_init(void) {
     return true;

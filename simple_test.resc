@@ -1,0 +1,14 @@
+# Simple grblHAL test for Renode
+mach create "test"
+machine LoadPlatformDescription @btt_skr_mini_e3_v3.repl
+
+# Load firmware
+sysbus LoadBinary @firmware/v0.1.0/grblHAL-STM32G0xx-BTT_SKR_MINI_E3_V30-uart-v0.1.0.bin 0x08008000
+cpu PC 0x08008000
+
+# Create UART terminal
+emulation CreateServerSocketTerminal 3456 "grblhal_uart" false
+connector Connect sysbus.usart1 grblhal_uart
+
+echo "Firmware loaded. Connect to telnet://localhost:3456"
+echo "Type 'start' to begin execution"

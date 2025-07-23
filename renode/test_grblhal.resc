@@ -1,0 +1,125 @@
+:name: BTT SKR Mini E3 v3.0 grblHAL Test
+:description: Testing grblHAL firmware on BTT SKR Mini E3 v3.0 board
+
+# Create machine
+mach create "BTT_SKR_Mini_E3_V30"
+machine LoadPlatformDescription @btt_skr_mini_e3_v30.repl
+
+# Load firmware - use the ELF file for debugging or BIN file
+# For ELF (includes debug symbols):
+#macro reset
+#{
+#    sysbus LoadELF @../../.pio/build/BTT_SKR_MINI_E3_V30_USB/firmware.elf
+#}
+
+# For BIN (production binary):
+macro reset
+{
+    # Load binary at flash start + bootloader offset
+    sysbus LoadBinary @../../firmware/firmware_usb_v1.0.0-beta2.bin 0x08008000
+    cpu PC 0x08008000
+}
+
+# Configure peripherals
+## Set up UART for debug output
+uart1 AddLineHook "UART1: {line}"
+showAnalyzer uart1
+
+## Set up USB CDC for main grbl communication  
+usbDevice AddLineHook "USB: {line}"
+
+## Monitor GPIO activity for step pulses
+gpioPortB AddStateChangedHook "STEP: GPIO Port B pin {0} = {1}" 0x2C01  # Pins 0, 10, 13
+
+## Monitor limit switches
+gpioPortC AddStateChangedHook "LIMIT: GPIO Port C pin {0} = {1}" 0x0007  # Pins 0, 1, 2
+
+## Monitor control inputs
+gpioPortC AddStateChangedHook "CONTROL: GPIO Port C pin {0} = {1}" 0xF000  # Pins 12, 13, 14, 15
+
+# Create virtual peripherals for testing
+## Virtual limit switches (initially not triggered)
+gpioPortC SetPinDirection 0 Input
+gpioPortC SetPinDirection 1 Input  
+gpioPortC SetPinDirection 2 Input
+gpioPortC SetPinState 0 true  # Active low, so true = not triggered
+gpioPortC SetPinState 1 true
+gpioPortC SetPinState 2 true
+
+## Virtual probe input
+gpioPortC SetPinDirection 14 Input
+gpioPortC SetPinState 14 true  # Not triggered
+
+## Virtual control inputs
+gpioPortC SetPinDirection 12 Input  # Cycle start
+gpioPortC SetPinDirection 13 Input  # Feed hold
+gpioPortC SetPinDirection 15 Input  # Reset/E-stop
+gpioPortC SetPinState 12 true  # Not pressed
+gpioPortC SetPinState 13 true  # Not pressed  
+gpioPortC SetPinState 15 true  # Not pressed
+
+# Helper macros for testing
+macro trigger_limit_x
+{
+    gpioPortC SetPinState 0 false  # Active low
+    gpioPortC SetPinState 0 true   # Release after 100ms
+}
+
+macro trigger_estop
+{
+    gpioPortC SetPinState 15 false  # Press E-stop
+}
+
+macro release_estop  
+{
+    gpioPortC SetPinState 15 true   # Release E-stop
+}
+
+macro send_gcode command
+{
+    usbDevice WriteLine $command
+}
+
+# Test scenarios
+macro test_basic_communication
+{
+    echo "Testing basic communication..."
+    send_gcode "?"            # Status query
+    send_gcode "$$"           # View settings
+    send_gcode "$I"           # Build info
+}
+
+macro test_motion
+{
+    echo "Testing motion control..."
+    send_gcode "G91"          # Relative mode
+    send_gcode "G1 X10 F100"  # Move X 10mm
+    send_gcode "G1 Y10 F100"  # Move Y 10mm
+    send_gcode "G1 Z5 F50"    # Move Z 5mm
+}
+
+macro test_safety_systems
+{
+    echo "Testing safety systems..."
+    trigger_estop
+    sleep 100
+    release_estop
+    
+    # Test limit switch
+    trigger_limit_x
+}
+
+# Performance monitoring
+machine SetClockSource cpu
+
+# Start the emulation
+echo "=== BTT SKR Mini E3 v3.0 grblHAL Test ==="
+echo "Available commands:"
+echo "  reset               - Reset the board"
+echo "  start               - Start emulation" 
+echo "  pause               - Pause emulation"
+echo "  test_basic_communication - Test grbl communication"
+echo "  test_motion         - Test motion commands"
+echo "  test_safety_systems - Test E-stop and limits"
+echo ""
+echo "To begin: reset; start"

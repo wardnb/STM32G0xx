@@ -78,6 +78,10 @@
   #include "stm32g0xx_hal_cortex.h"
 #endif /* HAL_CORTEX_MODULE_ENABLED */
 
+#ifdef HAL_PWR_MODULE_ENABLED
+  #include "stm32g0xx_hal_pwr.h"
+#endif /* HAL_PWR_MODULE_ENABLED */
+
 #ifdef __cplusplus
 }
 #endif

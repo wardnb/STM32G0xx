@@ -202,8 +202,9 @@ HAL_StatusTypeDef HAL_RCC_OscConfig(RCC_OscInitTypeDef *RCC_OscInitStruct);
 HAL_StatusTypeDef HAL_RCC_ClockConfig(RCC_ClkInitTypeDef *RCC_ClkInitStruct, uint32_t FLatency);
 HAL_StatusTypeDef HAL_PWREx_ControlVoltageScaling(uint32_t VoltageScaling);
 
-/* Power control definitions */
-#define PWR_REGULATOR_VOLTAGE_SCALE1    0x00000001U   /*!< Scale 1 mode(default value at reset): the maximum value of fHCLK = 64 MHz */
+
+/* Include RCC HAL Extended module */
+#include "stm32g0xx_hal_rcc_ex.h"
 
 #ifdef __cplusplus
 }

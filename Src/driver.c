@@ -31,6 +31,7 @@
 #include "driver.h"
 #include "serial.h"
 #include "boards/btt_skr_mini_e3_3.0_map.h"
+// IWDG HAL driver not available - use direct register access
 
 #include "grbl/task.h"
 #include "grbl/machine_limits.h"
@@ -369,6 +370,39 @@ static void spindle_calculate_rpm(void);
 
 // Driver initialization
 
+/* Watchdog timer using direct register access */
+static bool watchdog_enabled = false;
+
+/* IWDG register definitions for STM32G0xx */
+#define IWDG_KEY_RELOAD    0x0000AAAA
+#define IWDG_KEY_ENABLE    0x0000CCCC
+#define IWDG_KEY_WRITE     0x00005555
+
+// Watchdog implementation commented out due to missing peripheral definitions
+/*
+static bool watchdog_init(uint32_t timeout_ms)
+{
+    uint32_t reload = (timeout_ms > 4095) ? 4095 : timeout_ms;
+    
+    IWDG->KR = IWDG_KEY_WRITE;
+    IWDG->PR = 3;  // Prescaler /32
+    IWDG->RLR = reload;
+    while (IWDG->SR & (IWDG_SR_RVU | IWDG_SR_PVU));
+    IWDG->KR = IWDG_KEY_RELOAD;
+    IWDG->KR = IWDG_KEY_ENABLE;
+    
+    watchdog_enabled = true;
+    return true;
+}
+
+static void watchdog_reset(void)
+{
+    if (watchdog_enabled) {
+        IWDG->KR = IWDG_KEY_RELOAD;
+    }
+}
+*/
+
 bool driver_init (void)
 {
     SystemCoreClockUpdate();
@@ -453,6 +487,16 @@ extern void board_init(void);
 
     // Initialize step/direction mapping for GPIO_MAP mode
     stepdirmap_init(NULL);
+
+    // Initialize watchdog timer with 2 second timeout
+    // This provides protection against system hangs while allowing
+    // enough time for normal operations
+    // NOTE: Disabled due to missing IWDG peripheral definitions
+    // if (!watchdog_init(2000)) {
+    //     // Watchdog initialization failed - continue without it
+    //     // but log a warning if possible
+    //     watchdog_enabled = false;
+    // }
 
     return true;
 }
@@ -1211,6 +1255,15 @@ void SysTick_Handler (void)
     // Phase 3: Update advanced features
     spindle_calculate_rpm();
     spindle_pid_controller();
+    
+    // Reset watchdog timer every millisecond to prevent system reset
+    // The watchdog has a 2 second timeout, so this provides plenty of margin
+    // NOTE: Disabled due to missing IWDG peripheral definitions
+    // static uint32_t watchdog_counter = 0;
+    // if (++watchdog_counter >= 100) {  // Reset every 100ms
+    //     watchdog_counter = 0;
+    //     watchdog_reset();
+    // }
     
     if(systick_isr)
         systick_isr();

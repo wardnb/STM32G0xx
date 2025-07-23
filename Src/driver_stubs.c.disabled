@@ -1,0 +1,13 @@
+/**
+ * @file driver_stubs.c
+ * @brief Driver function stubs for grblHAL
+ */
+
+#include <stdbool.h>
+#include <stdint.h>
+
+// Driver initialization stub
+bool driver_init(void) {
+    // Basic driver initialization stub
+    return true;
+}
