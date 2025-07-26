@@ -31,8 +31,10 @@ void HAL_PCD_MspInit(PCD_HandleTypeDef* pcdHandle)
 {
   if(pcdHandle->Instance==USB)
   {
-    /* Enable USB peripheral clock - let HAL handle GPIO config */
-    // Note: USB pins PA11/PA12 are configured automatically
+    /* Enable USB peripheral clock - CRITICAL for USB operation */
+    __HAL_RCC_USB_CLK_ENABLE();
+    
+    // Note: USB pins PA11/PA12 are configured automatically by HAL
     
     /* USB interrupt Init - High priority for reliable USB operation */
     HAL_NVIC_SetPriority(USB_IRQn, 1, 0);  // Priority 1 (high) for USB stability

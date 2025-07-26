@@ -1,0 +1,245 @@
+:name: Comprehensive STM32G0xx grblHAL Test Suite
+:description: Tests UART communication, GPIO operations, interrupts, and grblHAL commands
+
+# Create machine
+mach create "grblHAL"
+machine LoadPlatformDescription @stm32g0b1_btt_skr.repl
+
+# Load the firmware
+$bin ?= @.pio/build/BTT_SKR_MINI_E3_V30/firmware.elf
+
+# Setup logging
+logLevel 3
+
+# Create UART analyzer for monitoring communication
+machine CreateAndShowAnalyzer "uart1" Antmicro.Renode.Analyzers.LoggingUartAnalyzer
+
+# Load firmware
+sysbus LoadELF $bin
+
+# Set up GPIO monitoring for key pins
+macro reset
+"""
+    # Enable instruction counting for performance monitoring
+    sysbus.cpu MaximumBlockSize 1
+    sysbus.cpu PerformanceInMips 64
+    
+    # Monitor critical GPIO pins
+    echo "=== GPIO Pin Monitoring Setup ==="
+    
+    # Step pins (PB13, PB10, PB0)
+    sysbus.gpioPortB.id13 AddStateChangedHook "echo '[STEP] X-axis step pin changed to: {0}'"
+    sysbus.gpioPortB.id10 AddStateChangedHook "echo '[STEP] Y-axis step pin changed to: {0}'"
+    sysbus.gpioPortB.id0 AddStateChangedHook "echo '[STEP] Z-axis step pin changed to: {0}'"
+    
+    # Direction pins (PB12, PB2, PC5)
+    sysbus.gpioPortB.id12 AddStateChangedHook "echo '[DIR] X-axis direction pin changed to: {0}'"
+    sysbus.gpioPortB.id2 AddStateChangedHook "echo '[DIR] Y-axis direction pin changed to: {0}'"
+    sysbus.gpioPortC.id5 AddStateChangedHook "echo '[DIR] Z-axis direction pin changed to: {0}'"
+    
+    # Enable pins (PB14, PB11, PB1)
+    sysbus.gpioPortB.id14 AddStateChangedHook "echo '[ENABLE] X-axis enable pin changed to: {0}'"
+    sysbus.gpioPortB.id11 AddStateChangedHook "echo '[ENABLE] Y-axis enable pin changed to: {0}'"
+    sysbus.gpioPortB.id1 AddStateChangedHook "echo '[ENABLE] Z-axis enable pin changed to: {0}'"
+    
+    # Spindle control pins (PA1=PWM, PC6=Enable, PC7=Direction)
+    sysbus.gpioPortA.id1 AddStateChangedHook "echo '[SPINDLE] PWM pin changed to: {0}'"
+    sysbus.gpioPortC.id6 AddStateChangedHook "echo '[SPINDLE] Enable pin changed to: {0}'"
+    sysbus.gpioPortC.id7 AddStateChangedHook "echo '[SPINDLE] Direction pin changed to: {0}'"
+    
+    # Limit switches (PA5, PA6, PA7)
+    sysbus.gpioPortA.id5 AddStateChangedHook "echo '[LIMIT] X-axis limit switch: {0}'"
+    sysbus.gpioPortA.id6 AddStateChangedHook "echo '[LIMIT] Y-axis limit switch: {0}'"
+    sysbus.gpioPortA.id7 AddStateChangedHook "echo '[LIMIT] Z-axis limit switch: {0}'"
+    
+    # Control pins (PC0=Reset, PC1=Feed Hold, PC2=Cycle Start)
+    sysbus.gpioPortC.id0 AddStateChangedHook "echo '[CONTROL] Reset button: {0}'"
+    sysbus.gpioPortC.id1 AddStateChangedHook "echo '[CONTROL] Feed Hold button: {0}'"
+    sysbus.gpioPortC.id2 AddStateChangedHook "echo '[CONTROL] Cycle Start button: {0}'"
+"""
+
+# Test sequence macros
+macro sendCommand
+"""
+    echo ">>> Sending: $0"
+    sysbus.usart1 WriteDoubleWord 0x28 `'$0'`
+    sysbus.usart1 WriteDoubleWord 0x28 0x0D
+    sysbus.usart1 WriteDoubleWord 0x28 0x0A
+"""
+
+macro testGrblCommands
+"""
+    echo ""
+    echo "=== Testing grblHAL Commands ==="
+    echo ""
+    
+    # Test status query
+    sendCommand "?"
+    sleep 0.1
+    
+    # Test help command
+    sendCommand "$"
+    sleep 0.1
+    
+    # Test version query
+    sendCommand "$I"
+    sleep 0.1
+    
+    # Test settings query
+    sendCommand "$$"
+    sleep 0.1
+    
+    # Test alarm state
+    sendCommand "$X"
+    sleep 0.1
+    
+    # Test homing (will fail without switches)
+    sendCommand "$H"
+    sleep 0.1
+    
+    # Test jog command
+    sendCommand "$J=X10 F100"
+    sleep 0.1
+    
+    # Test simple G-code
+    sendCommand "G90"
+    sleep 0.1
+    sendCommand "G0 X10 Y10 Z5"
+    sleep 0.1
+    sendCommand "G1 X20 Y20 F200"
+    sleep 0.1
+    
+    # Test spindle control
+    sendCommand "M3 S12000"
+    sleep 0.1
+    sendCommand "M5"
+    sleep 0.1
+"""
+
+macro testLimitSwitches
+"""
+    echo ""
+    echo "=== Testing Limit Switches ==="
+    echo ""
+    
+    # Trigger X limit
+    echo "Triggering X-axis limit switch"
+    sysbus.gpioPortA.id5 Toggle
+    sleep 0.1
+    sysbus.gpioPortA.id5 Toggle
+    sleep 0.1
+    
+    # Trigger Y limit
+    echo "Triggering Y-axis limit switch"
+    sysbus.gpioPortA.id6 Toggle
+    sleep 0.1
+    sysbus.gpioPortA.id6 Toggle
+    sleep 0.1
+    
+    # Trigger Z limit
+    echo "Triggering Z-axis limit switch"
+    sysbus.gpioPortA.id7 Toggle
+    sleep 0.1
+    sysbus.gpioPortA.id7 Toggle
+    sleep 0.1
+"""
+
+macro testControlButtons
+"""
+    echo ""
+    echo "=== Testing Control Buttons ==="
+    echo ""
+    
+    # Test feed hold
+    echo "Pressing Feed Hold button"
+    sysbus.gpioPortC.id1 Press
+    sleep 0.1
+    sysbus.gpioPortC.id1 Release
+    sleep 0.1
+    
+    # Test cycle start
+    echo "Pressing Cycle Start button"
+    sysbus.gpioPortC.id2 Press
+    sleep 0.1
+    sysbus.gpioPortC.id2 Release
+    sleep 0.1
+    
+    # Test reset (careful - this might reset the system)
+    echo "Pressing Reset button"
+    sysbus.gpioPortC.id0 Press
+    sleep 0.1
+    sysbus.gpioPortC.id0 Release
+    sleep 0.1
+"""
+
+macro testInterrupts
+"""
+    echo ""
+    echo "=== Testing Interrupt Response ==="
+    echo ""
+    
+    # Check interrupt status
+    sysbus.nvic InterruptsPending
+    
+    # Monitor timer interrupts
+    echo "Monitoring timer interrupts for 1 second..."
+    sleep 1
+    
+    # Check UART interrupt handling
+    echo "Testing UART RX interrupt..."
+    sendCommand "G91"
+    sleep 0.1
+"""
+
+macro runComprehensiveTest
+"""
+    echo ""
+    echo "================================================"
+    echo "    STM32G0xx grblHAL Comprehensive Test"
+    echo "================================================"
+    echo ""
+    
+    # Reset and start
+    echo "=== Starting firmware ==="
+    runMacro $reset
+    start
+    
+    # Let firmware initialize
+    echo "Waiting for firmware initialization..."
+    sleep 2
+    
+    # Run test sequences
+    testGrblCommands
+    testLimitSwitches
+    testControlButtons
+    testInterrupts
+    
+    # Monitor for 2 more seconds
+    echo ""
+    echo "=== Monitoring system for 2 seconds ==="
+    sleep 2
+    
+    # Check final CPU state
+    echo ""
+    echo "=== Final System State ==="
+    echo "CPU State:"
+    sysbus.cpu PC
+    echo "Instructions executed:"
+    sysbus.cpu ExecutedInstructions
+    echo "Performance:"
+    sysbus.cpu Performance
+    
+    echo ""
+    echo "=== Test Complete ==="
+"""
+
+# Show help
+echo ""
+echo "Available test commands:"
+echo "  runComprehensiveTest - Run all tests"
+echo "  testGrblCommands    - Test grblHAL command processing"
+echo "  testLimitSwitches   - Test limit switch inputs"
+echo "  testControlButtons  - Test control button inputs"
+echo "  testInterrupts      - Test interrupt handling"
+echo ""
+echo "To run comprehensive test: runComprehensiveTest"

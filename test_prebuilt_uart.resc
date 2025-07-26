@@ -1,0 +1,60 @@
+:name: Test Pre-built UART
+:description: Test known-working pre-built UART firmware
+
+# Create machine
+mach create "PreBuilt_UART"
+machine LoadPlatformDescription @stm32g0b1_btt_skr.repl
+
+# Load the pre-built UART firmware that was known to work
+sysbus LoadBinary @firmware/v0.1.0/grblHAL-STM32G0xx-BTT_SKR_MINI_E3_V30-uart-v0.1.0.bin 0x08008000
+
+# Set CPU state
+cpu SP 0x20024000
+cpu PC 0x0800FDDC
+
+# Create UART analyzer  
+showAnalyzer sysbus.usart1
+
+echo "=== PRE-BUILT UART FIRMWARE TEST ==="
+echo "Firmware: Known working v0.1.0 UART binary"
+echo "Purpose: Determine if issue is our changes or platform"
+echo ""
+
+start
+
+# Monitor at key intervals
+sleep 1
+echo "Status at 1 second:"
+echo "PC: "
+cpu PC
+echo "Instructions: "
+cpu ExecutedInstructions
+
+sleep 3
+echo ""
+echo "Status at 4 seconds total:"
+echo "PC: "
+cpu PC
+echo "Instructions: "
+cpu ExecutedInstructions
+
+# Test communication
+echo ""
+echo "Testing UART communication with pre-built firmware..."
+sysbus.usart1 WriteChar 0x3F
+sysbus.usart1 WriteChar 0x0A
+
+sleep 1
+
+echo ""
+echo "=== PRE-BUILT FIRMWARE RESULT ==="
+echo "PC: "
+cpu PC
+echo "Instructions: "
+cpu ExecutedInstructions
+
+if cpu.PC == 0 then
+  echo "CONCLUSION: Even pre-built firmware crashes - Renode platform issue"
+else
+  echo "CONCLUSION: Pre-built works, our changes broke something"
+end

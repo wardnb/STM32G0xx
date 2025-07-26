@@ -1,0 +1,64 @@
+:name: Test Minimal Firmware
+:description: Test firmware with most peripherals disabled
+
+# Create machine
+mach create "Minimal_Test"
+machine LoadPlatformDescription @stm32g0b1_btt_skr.repl
+
+# Load minimal UART firmware
+sysbus LoadBinary @.pio/build/BTT_SKR_MINI_E3_V30/firmware.bin 0x08008000
+
+# Set CPU state
+cpu SP 0x20024000
+cpu PC 0x0800FDDC
+
+# Create UART analyzer
+showAnalyzer sysbus.usart1
+
+echo "=== MINIMAL FIRMWARE TEST ==="
+echo "Configuration:"
+echo "- UART only (no USB)"
+echo "- No EEPROM, SD card, I2C"
+echo "- No Trinamic drivers"
+echo "- No spindle/VFD"
+echo "- Basic 3-axis control only"
+echo ""
+
+start
+
+# Monitor at intervals
+sleep 1
+echo "Status at 1 second:"
+echo "PC: "
+cpu PC
+echo "Instructions: "
+cpu ExecutedInstructions
+
+sleep 4  
+echo ""
+echo "Status at 5 seconds total:"
+echo "PC: "
+cpu PC
+echo "Instructions: "
+cpu ExecutedInstructions
+
+# Test UART
+echo ""
+echo "Testing UART communication..."
+sysbus.usart1 WriteChar 0x3F
+sysbus.usart1 WriteChar 0x0A
+
+sleep 2
+
+echo ""
+echo "=== MINIMAL FIRMWARE RESULT ==="
+echo "Final PC: "
+cpu PC
+echo "Total instructions: "
+cpu ExecutedInstructions
+
+if cpu.PC == 0 then
+  echo "RESULT: Minimal firmware ALSO crashes - definitively a Renode issue"
+else
+  echo "RESULT: Minimal firmware runs! The disabled peripherals were the issue"
+end

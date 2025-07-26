@@ -1,0 +1,85 @@
+:name: Working grblHAL Test
+:description: Practical test of grblHAL firmware
+
+# Create machine
+mach create "grblHAL"
+machine LoadPlatformDescription @stm32g0b1_btt_skr.repl
+
+# Load firmware - use the one we know has proper vectors
+sysbus LoadELF @.pio/build/BTT_SKR_MINI_E3_V30/firmware.elf
+
+# Enable logging
+logLevel 2
+
+# Create UART terminal
+emulation CreateServerSocketTerminal 3456 "uart_terminal" false
+connector Connect usart1 uart_terminal
+
+# Fix the vector issue by setting proper SP/PC from vector table
+macro reset
+"""
+    # Read initial SP and PC from vector table
+    $sp = `sysbus ReadDoubleWord 0x08008000`
+    $pc = `sysbus ReadDoubleWord 0x08008004`
+    
+    # Adjust PC (clear thumb bit)
+    $pc = `python "print(hex({0} & ~1))".format($pc)`
+    
+    echo "Setting SP=$sp PC=$pc"
+    cpu SP $sp
+    cpu PC $pc
+    cpu IsHalted false
+"""
+
+# Helper to send commands
+macro sendString
+"""
+    python "
+import time
+s = '$0'
+for c in s:
+    self.Machine['sysbus.usart1'].WriteDoubleWord(0x28, ord(c))
+    time.sleep(0.001)
+self.Machine['sysbus.usart1'].WriteDoubleWord(0x28, 13)
+self.Machine['sysbus.usart1'].WriteDoubleWord(0x28, 10)
+"
+"""
+
+# Main test sequence
+echo "=== STM32G0xx grblHAL Firmware Test ==="
+echo ""
+echo "1. Connect to UART terminal: telnet localhost 3456"
+echo "2. Starting firmware..."
+echo ""
+
+# Initialize and start
+runMacro $reset
+start
+
+# Wait for boot
+echo "Waiting for firmware initialization..."
+pause 2000
+
+# Check if it's running
+echo ""
+echo "CPU State:"
+sysbus.cpu IsHalted
+echo "PC:"
+sysbus.cpu PC
+echo "Instructions executed:"
+sysbus.cpu ExecutedInstructions
+
+# Try sending some commands
+echo ""
+echo "Sending grblHAL commands..."
+sendString "?"
+pause 100
+sendString "$I"
+pause 100
+sendString "$$"
+pause 100
+
+echo ""
+echo "=== Test Complete ==="
+echo "Check the UART terminal for output"
+echo ""

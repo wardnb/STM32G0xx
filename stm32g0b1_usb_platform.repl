@@ -1,0 +1,171 @@
+// STM32G0B1 platform description with USB support for BTT SKR Mini E3 v3.0
+// Based on STM32G0 with USB CDC functionality
+
+// Bootloader area - 32KB
+bootloader: Memory.MappedMemory @ sysbus 0x08000000
+    size: 0x8000
+
+// Application flash starting at bootloader offset - 480KB
+flash: Memory.MappedMemory @ sysbus 0x08008000
+    size: 0x78000
+
+// RAM - 144KB for STM32G0B1  
+ram: Memory.MappedMemory @ sysbus 0x20000000
+    size: 0x24000
+
+nvic: IRQControllers.NVIC @ sysbus 0xE000E000
+    priorityMask: 0xF0
+    systickFrequency: 64000000
+    IRQ -> cpu@0
+
+exti: IRQControllers.STM32F4_EXTI @ sysbus 0x40021800
+    numberOfOutputLines: 34
+    firstDirectLine: 19
+    [0, 1] -> nvicInput5@[0, 1]
+    [2, 3] -> nvicInput6@[0, 1]
+    [4-15] -> nvicInput7@[0-11]
+    [23] -> nvic@[23]
+    [32, 33] -> nvicInput8@[0, 1]
+    [17, 18] -> nvicInput12@[0, 1]
+
+nvicInput8: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 2
+    -> nvic@8
+
+nvicInput10: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 2
+    -> nvic@10
+
+nvicInput11: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 9
+    -> nvic@11
+
+nvicInput12: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 2
+    -> nvic@12
+
+nvicInput5: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 2
+    -> nvic@5
+
+nvicInput6: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 2
+    -> nvic@6
+
+nvicInput7: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 12
+    -> nvic@7
+
+nvicInput29: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 4
+    -> nvic@29
+
+cpu: CPU.CortexM @ sysbus
+    cpuType: "cortex-m0"
+    nvic: nvic
+
+// USB CDC communication simulated as UART
+usb_cdc: UART.STM32F7_USART @ sysbus 0x40005C00
+    frequency: 64000000
+    IRQ -> nvic@8
+
+// UART1 for debug/alternate communication (PA9/PA10)
+usart1: UART.STM32F7_USART @ sysbus 0x40013800
+    frequency: 64000000
+    IRQ -> nvic@27
+
+usart2: UART.STM32F7_USART @ sysbus 0x40004400
+    frequency: 64000000
+    IRQ -> nvic@28
+
+// GPIO Ports
+gpioPortA: GPIOPort.STM32_GPIOPort @ sysbus <0x50000000, +0x400>
+    modeResetValue: 0xEBFFFFFF
+    pullUpPullDownResetValue: 0x24000000
+    numberOfAFs: 8
+    [0-15] -> exti@[0-15]
+
+gpioPortB: GPIOPort.STM32_GPIOPort @ sysbus <0x50000400, +0x400>
+    modeResetValue: 0xFFFFFFFF
+    pullUpPullDownResetValue: 0x00000000
+    numberOfAFs: 8
+    [0-15] -> exti@[0-15]
+
+gpioPortC: GPIOPort.STM32_GPIOPort @ sysbus <0x50000800, +0x400>
+    modeResetValue: 0xFFFFFFFF
+    pullUpPullDownResetValue: 0x00000000
+    numberOfAFs: 8
+    [0-15] -> exti@[0-15]
+
+gpioPortD: GPIOPort.STM32_GPIOPort @ sysbus <0x50000C00, +0x400>
+    modeResetValue: 0xFFFFFFFF
+    pullUpPullDownResetValue: 0x00000000
+    numberOfAFs: 8
+    [0-15] -> exti@[0-15]
+
+// Timers for PWM and stepper control
+timer1: Timers.STM32_Timer @ sysbus 0x40012C00
+    frequency: 64000000
+    initialLimit: 0xFFFF
+    -> nvic@14
+
+timer2: Timers.STM32_Timer @ sysbus 0x40000000
+    frequency: 64000000
+    initialLimit: 0xFFFFFFFF
+    -> nvic@15
+
+timer3: Timers.STM32_Timer @ sysbus 0x40000400
+    frequency: 64000000
+    initialLimit: 0xFFFF
+    -> nvic@16
+
+// RCC for clock control
+rcc: Python.PythonPeripheral @ sysbus 0x40021000
+    size: 0x400
+    initable: true
+    script: '''
+if request.isInit:
+   lastVal = 0
+   data = {'hsion': 1, 'pllon': 0, 'sw': 0, 'lsion': 0}
+
+if request.isWrite:
+    if request.offset == 0x0:
+        data['hsion'] = (request.value >> 8) & 0x1
+        data['pllon'] = (request.value >> 24) & 0x1
+    elif request.offset == 0x8:
+        data['sw'] = request.value & 0x7
+    elif request.offset == 0x60:
+        data['lsion'] = request.value & 0x1
+elif request.isRead:
+    lastVal = 1 - lastVal
+    if request.offset == 0x0:
+        request.value = (data['hsion'] << 8) | (data['hsion'] << 10) | (data['pllon'] << 25)
+    elif request.offset == 0x4:
+        request.value = lastVal * 0xFFFFFFF8
+    elif request.offset == 0x24:
+        request.value = 0x0
+    elif request.offset == 0x60:
+        request.value = (data['lsion'] << 1)
+    else:
+        request.value = data['sw'] << 3
+'''
+
+// Debug interface registers (for debugger access)
+debug_regs: Python.PythonPeripheral @ sysbus 0xF0
+    size: 0x10
+    initable: true
+    script: '''
+if request.isRead:
+    if request.offset == 0x8:  # Debug Base Address at 0xF8
+        request.value = 0xE00FF000  # Standard debug base address
+    else:
+        request.value = 0x0
+'''
+
+sysbus:
+    init:
+        Tag <0x40002C00, 0x40002FFF> "WWDG"
+        Tag <0x40003000, 0x400033FF> "IWDG"
+        Tag <0x40007000, 0x400073FF> "PWR"
+        Tag <0x40010000, 0x400103FF> "SYSCFG"
+        Tag <0x40022000, 0x400223FF> "FLASH_INTERFACE"

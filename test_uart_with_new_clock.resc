@@ -1,0 +1,45 @@
+:name: Test UART with New Clock
+:description: Test UART firmware with the modified PLL settings
+
+# Create machine
+mach create "UART_NewClock"
+machine LoadPlatformDescription @stm32g0b1_btt_skr.repl
+
+# Load the newly built UART firmware (with modified clock)
+sysbus LoadBinary @.pio/build/BTT_SKR_MINI_E3_V30/firmware.bin 0x08008000
+
+# Set CPU state
+cpu SP 0x20024000
+cpu PC 0x0800FDDC
+
+# Create UART analyzer
+showAnalyzer sysbus.usart1
+
+echo "UART firmware with new PLL configuration:"
+echo "- PLL: 16MHz × 12 = 192MHz VCO"
+echo "- PLLR÷3 = 64MHz system, PLLQ÷4 = 48MHz"
+echo ""
+echo "Starting..."
+start
+
+sleep 2
+
+echo ""
+echo "Status after 2 seconds:"
+echo "PC:"
+cpu PC
+echo "Is Halted:"
+cpu IsHalted
+echo "Instructions executed:"
+cpu ExecutedInstructions
+
+# If running, try UART communication
+if cpu.IsHalted != True then
+  echo ""
+  echo "UART firmware is stable with new clock! Testing communication..."
+  sysbus.usart1 WriteChar 0x3F
+  sysbus.usart1 WriteChar 0x0A
+else
+  echo ""
+  echo "UART firmware also crashes - PLL configuration issue!"
+end

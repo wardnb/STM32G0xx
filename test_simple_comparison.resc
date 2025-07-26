@@ -1,0 +1,48 @@
+:name: Simple Platform Comparison
+:description: Simple comparison of platform behaviors
+
+echo "=== SIMPLE PLATFORM COMPARISON ==="
+echo ""
+
+# Test original platform first
+echo "Testing original platform..."
+mach create "Test1"
+machine LoadPlatformDescription @stm32g0b1_usb_platform.repl
+sysbus LoadBinary @firmware/grblHAL_USB_48MHz_FINAL.bin 0x08008000
+cpu SP 0x20024000
+cpu PC 0x0800FDDC
+
+# Single step to see if it works at all
+singleStep
+echo "Original - PC after 1 step: "
+cpu PC
+echo "Original - Instructions: "
+cpu ExecutedInstructions
+
+machine Clear
+echo ""
+
+# Test improved platform
+echo "Testing improved platform..."
+mach create "Test2"
+machine LoadPlatformDescription @stm32g0b1_improved_platform.repl
+sysbus LoadBinary @firmware/grblHAL_USB_48MHz_FINAL.bin 0x08008000
+cpu SP 0x20024000
+cpu PC 0x0800FDDC
+
+# Single step to see if it works
+singleStep
+echo "Improved - PC after 1 step: "
+cpu PC
+echo "Improved - Instructions: "
+cpu ExecutedInstructions
+
+# Try more steps if first one worked
+singleStep 100
+echo "Improved - PC after 101 steps: "
+cpu PC
+echo "Improved - Instructions: "
+cpu ExecutedInstructions
+
+echo ""
+echo "If improved platform shows higher instruction counts, it's working better!"

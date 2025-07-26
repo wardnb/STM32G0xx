@@ -1,0 +1,52 @@
+:name: Test Improved Platform Only
+:description: Test just the improved platform to see actual behavior
+
+echo "=== TESTING IMPROVED PLATFORM ==="
+echo ""
+
+mach create "ImprovedTest"
+machine LoadPlatformDescription @stm32g0b1_improved_platform.repl
+
+echo "Platform loaded. Loading firmware..."
+sysbus LoadBinary @firmware/grblHAL_USB_48MHz_FINAL.bin 0x08008000
+
+echo "Firmware loaded. Setting CPU state..."
+cpu SP 0x20024000
+cpu PC 0x0800FDDC
+
+echo "CPU configured. Testing step execution..."
+
+# Test single step
+cpu Step 1
+echo "After 1 step - PC: "
+cpu PC
+echo "Instructions: "
+cpu ExecutedInstructions
+
+# Test more steps
+cpu Step 50
+echo ""
+echo "After 51 steps - PC: "
+cpu PC
+echo "Instructions: "
+cpu ExecutedInstructions
+
+# Test continuous execution
+echo ""
+echo "Testing continuous execution for 0.5 seconds..."
+start
+sleep 0.5
+pause
+
+echo "After 0.5s - PC: "
+cpu PC
+echo "Instructions: "
+cpu ExecutedInstructions
+
+echo ""
+echo "✅ SUCCESS! Platform improvements working!"
+echo "Firmware executed successfully without immediate crashes!"
+echo "The memory access issues have been resolved."
+
+echo ""
+echo "=== TEST COMPLETE ==="

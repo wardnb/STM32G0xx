@@ -1,0 +1,85 @@
+:name: USB grblHAL Test
+:description: Test USB CDC functionality with proper initialization
+
+# Create machine
+mach create "grblHAL_USB"
+machine LoadPlatformDescription @stm32g0b1_usb_platform.repl
+
+# Load USB firmware binary
+sysbus LoadBinary @firmware/firmware_usb_v0.1.2.bin 0x08008000
+
+# Enable logging
+logLevel 2
+
+# Configure analyzers
+showAnalyzer sysbus.usb_cdc
+showAnalyzer sysbus.usart1
+
+# Fix the vector issue by setting proper SP/PC from vector table
+macro reset
+"""
+    # Read initial SP and PC from vector table
+    $sp = `sysbus ReadDoubleWord 0x08008000`
+    $pc = `sysbus ReadDoubleWord 0x08008004`
+    
+    echo "Setting SP=$sp PC=$pc"
+    cpu SP $sp
+    cpu PC $pc
+    cpu IsHalted false
+"""
+
+# Helper to send commands via USB CDC
+macro sendUSB
+"""
+    python "
+import time
+s = '$0'
+for c in s:
+    self.Machine['sysbus.usb_cdc'].WriteDoubleWord(0x28, ord(c))
+    time.sleep(0.001)
+self.Machine['sysbus.usb_cdc'].WriteDoubleWord(0x28, 13)
+self.Machine['sysbus.usb_cdc'].WriteDoubleWord(0x28, 10)
+"
+"""
+
+# Main test sequence
+echo "=== STM32G0xx USB CDC grblHAL Test ==="
+echo ""
+echo "USB CDC analyzer windows should show communication"
+echo ""
+
+# Initialize and start
+runMacro $reset
+start
+
+# Wait for boot
+echo "Waiting for USB enumeration and firmware initialization..."
+sleep 3
+
+# Check if it's running
+echo ""
+echo "CPU State:"
+sysbus.cpu IsHalted
+echo "PC:"
+sysbus.cpu PC
+echo "Instructions executed:"
+sysbus.cpu ExecutedInstructions
+
+# Try sending some commands via USB CDC
+echo ""
+echo "Sending grblHAL commands via USB CDC..."
+sendUSB "?"
+sleep 1
+sendUSB "$I"
+sleep 1
+sendUSB "$$"
+sleep 1
+sendUSB "G21"
+sleep 1
+
+echo ""
+echo "=== USB Test Complete ==="
+echo "Check the USB_CDC_Analyzer window for responses"
+echo ""
+echo "You can continue sending commands with: sendUSB \"<command>\""
+echo "Example: sendUSB \"G0 X10 Y10\""

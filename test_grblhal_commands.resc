@@ -1,0 +1,45 @@
+# Interactive grblHAL testing script for STM32G0B1 BTT SKR Mini E3 v3.0
+
+# Load the simulation
+i @test_btt_skr_mini_e3_v30.resc
+
+# Wait for boot
+sleep 2
+
+# Test grblHAL status command
+echo "Sending grblHAL status request: $$"
+sysbus.usart1 WriteChar 0x24
+sysbus.usart1 WriteChar 0x24
+sysbus.usart1 WriteChar 0x0A
+
+sleep 1
+
+# Test grblHAL help command  
+echo "Sending grblHAL help request: $"
+sysbus.usart1 WriteChar 0x24
+sysbus.usart1 WriteChar 0x0A
+
+sleep 1
+
+# Test basic G-code command
+echo "Sending basic G-code: G0 X10"
+sysbus.usart1 WriteChar 0x47
+sysbus.usart1 WriteChar 0x30
+sysbus.usart1 WriteChar 0x20
+sysbus.usart1 WriteChar 0x58
+sysbus.usart1 WriteChar 0x31
+sysbus.usart1 WriteChar 0x30
+sysbus.usart1 WriteChar 0x0A
+
+sleep 1
+
+# Test grblHAL version request
+echo "Sending version request: $I"
+sysbus.usart1 WriteChar 0x24
+sysbus.usart1 WriteChar 0x49
+sysbus.usart1 WriteChar 0x0A
+
+sleep 2
+
+echo "grblHAL command tests completed"
+echo "Check UART analyzer window for responses"

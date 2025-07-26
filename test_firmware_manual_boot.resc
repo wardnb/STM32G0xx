@@ -1,0 +1,46 @@
+# Manual boot test for STM32G0B1 BTT SKR Mini E3 v3.0
+
+# Create machine and load platform
+mach create "BTT_SKR_Mini_E3_v30"
+machine LoadPlatformDescription @stm32g0b1_btt_skr.repl
+
+# Load the UART firmware
+sysbus LoadELF @.pio/build/BTT_SKR_MINI_E3_V30/firmware.elf
+
+# Configure UART1 analyzer
+showAnalyzer sysbus.usart1
+
+# Set up logging
+logLevel 3
+
+# Manually set stack pointer to end of RAM (0x20024000)
+sysbus.cpu SetRegisterUnsafe 13 0x20024000
+
+# Manually set program counter to reset vector (entry point)
+sysbus.cpu SetRegisterUnsafe 15 0x80100b9
+
+echo "Manually setting up CPU registers for firmware boot:"
+echo "SP = 0x20024000 (end of 144KB RAM)"  
+echo "PC = 0x80100b9 (firmware entry point)"
+
+# Start the simulation
+start
+
+# Wait for boot and send test commands
+sleep 3
+
+echo "Sending grblHAL status command: $$"
+sysbus.usart1 WriteChar 0x24
+sysbus.usart1 WriteChar 0x24
+sysbus.usart1 WriteChar 0x0A
+
+sleep 2
+
+echo "Sending grblHAL version command: \$I"
+sysbus.usart1 WriteChar 0x24
+sysbus.usart1 WriteChar 0x49
+sysbus.usart1 WriteChar 0x0A
+
+sleep 2
+
+echo "Firmware test completed - check UART analyzer for responses"

@@ -1,0 +1,24 @@
+# Simple debug approach
+
+# Load firmware
+mach create "Simple_Debug"
+machine LoadPlatformDescription @stm32g0b1_btt_skr.repl
+sysbus LoadELF @.pio/build/BTT_SKR_MINI_E3_V30/firmware.elf
+
+echo "Starting firmware and monitoring for stall..."
+
+# Start execution
+start
+
+# Let it run briefly
+sleep 1
+
+echo "After 1 second - checking if firmware is responsive..."
+
+# Try to send a simple command
+sysbus.usart1 WriteChar 0x3F  # Send '?'
+
+sleep 2
+
+echo "Firmware running for 3 seconds total. Check for any output."
+echo "If no UART activity, firmware is likely in infinite loop."

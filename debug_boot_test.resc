@@ -1,0 +1,71 @@
+:name: Debug Boot Test
+:description: Step through boot process
+
+# Create machine
+mach create "grblHAL"
+machine LoadPlatformDescription @stm32g0b1_btt_skr.repl
+
+# Load firmware
+sysbus LoadELF @.pio/build/BTT_SKR_MINI_E3_V30/firmware.elf
+
+# Set up debugging
+cpu MaximumBlockSize 1
+cpu PerformanceInMips 64
+logLevel 3
+
+# Create UART monitor
+showAnalyzer usart1
+
+# Check initial state
+echo "=== Initial State ==="
+echo "SP (Stack Pointer):"
+cpu SP
+echo "PC (Program Counter):"
+cpu PC
+echo "Vector Table @ 0x08008000:"
+sysbus ReadDoubleWord 0x08008000
+echo "Reset Handler @ 0x08008004:"
+sysbus ReadDoubleWord 0x08008004
+
+# Set breakpoints at key locations
+cpu AddHook 0x08008000 "echo 'Hit vector table @ 0x08008000'"
+cpu AddHook 0x00000000 "echo 'ERROR: Jumped to 0x00000000!'; pause"
+
+# Start and step
+echo ""
+echo "=== Starting Execution ==="
+start
+
+# Step through first few instructions
+echo "Step 1:"
+cpu Step
+cpu PC
+
+echo "Step 2:"
+cpu Step
+cpu PC
+
+echo "Step 3:"
+cpu Step  
+cpu PC
+
+echo "Step 4:"
+cpu Step
+cpu PC
+
+echo "Step 5:"
+cpu Step
+cpu PC
+
+# Continue for a bit
+echo ""
+echo "=== Running for 1000 instructions ==="
+cpu ExecutionMode SingleStep
+repeat 1000 cpu Step
+
+echo ""
+echo "=== Final State ==="
+echo "PC:"
+cpu PC
+echo "Instructions executed:"
+cpu ExecutedInstructions

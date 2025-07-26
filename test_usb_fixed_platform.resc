@@ -1,0 +1,109 @@
+:name: USB Fixed Platform Test
+:description: Test with debug registers added
+
+# Create machine
+mach create "USB_Fixed"
+
+# Create custom platform with debug registers
+python "
+# Import necessary types
+machine = self.Machine
+
+# Memory regions
+from Antmicro.Renode.Peripherals.Memory import MappedMemory
+bootloader = MappedMemory(machine, 0x8000)
+flash = MappedMemory(machine, 0x78000)
+ram = MappedMemory(machine, 0x24000)
+
+machine.SystemBus.Register(bootloader, 0x08000000)
+machine.SystemBus.Register(flash, 0x08008000)
+machine.SystemBus.Register(ram, 0x20000000)
+
+# Add debug interface registers (0xF0-0xFF range)
+from Antmicro.Renode.Peripherals.Miscellaneous import UnknownPeripheral
+debug_regs = UnknownPeripheral(machine.SystemBus)
+machine.SystemBus.Register(debug_regs, 0xF0, 0x10)
+
+# CPU and interrupt controller
+from Antmicro.Renode.Peripherals.CPU import CortexM
+from Antmicro.Renode.Peripherals.IRQControllers import NVIC
+
+cpu = CortexM(machine, 'cortex-m0', machine.SystemBus)
+nvic = NVIC(machine.SystemBus)
+nvic.PriorityMask = 0xF0
+nvic.SystickFrequency = 64000000
+
+machine.SystemBus.Register(nvic, 0xE000E000)
+cpu.NVIC = nvic
+
+machine.SetSystemBus(machine.SystemBus)
+
+# USB CDC (simulated as UART)
+from Antmicro.Renode.Peripherals.UART import STM32F7_USART
+usb_cdc = STM32F7_USART(machine)
+usb_cdc.Frequency = 64000000
+machine.SystemBus.Register(usb_cdc, 0x40005C00)
+
+# UART1 for comparison
+usart1 = STM32F7_USART(machine)
+usart1.Frequency = 64000000
+machine.SystemBus.Register(usart1, 0x40013800)
+
+# RCC (simplified)
+rcc = UnknownPeripheral(machine.SystemBus) 
+machine.SystemBus.Register(rcc, 0x40021000, 0x400)
+
+# GPIO ports
+from Antmicro.Renode.Peripherals.GPIOPort import STM32_GPIOPort
+gpio_a = STM32_GPIOPort(machine)
+gpio_b = STM32_GPIOPort(machine)
+gpio_c = STM32_GPIOPort(machine)
+gpio_d = STM32_GPIOPort(machine)
+
+machine.SystemBus.Register(gpio_a, 0x50000000, 0x400)
+machine.SystemBus.Register(gpio_b, 0x50000400, 0x400)
+machine.SystemBus.Register(gpio_c, 0x50000800, 0x400)
+machine.SystemBus.Register(gpio_d, 0x50000C00, 0x400)
+
+print('Platform created with debug registers')
+"
+
+# Load USB firmware
+sysbus LoadBinary @firmware/firmware_usb_v0.1.2.bin 0x08008000
+
+# Set CPU state
+cpu SP 0x20024000
+cpu PC 0x0800FDDC
+
+# Configure analyzers
+showAnalyzer sysbus.usb_cdc
+showAnalyzer sysbus.usart1
+
+echo "USB firmware loaded with debug interface support"
+echo "Starting emulation..."
+start
+
+# Let it run
+sleep 2
+
+# Check status
+echo ""
+echo "Status:"
+echo "PC:"
+cpu PC
+echo "Is Halted:"
+cpu IsHalted
+echo "Instructions executed:"
+cpu ExecutedInstructions
+
+# Try USB communication
+if cpu.IsHalted == False then
+  echo ""
+  echo "Attempting USB communication..."
+  sysbus.usb_cdc WriteChar 0x3F
+  sysbus.usb_cdc WriteChar 0x0A
+  sleep 1
+  echo "Check USB_CDC_Analyzer for responses"
+end
+
+echo "Test complete"

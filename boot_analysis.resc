@@ -1,0 +1,82 @@
+:name: Boot Analysis
+:description: Analyze boot process
+
+# Create machine
+mach create "grblHAL"
+machine LoadPlatformDescription @stm32g0b1_btt_skr.repl
+
+# Load firmware
+sysbus LoadELF @.pio/build/BTT_SKR_MINI_E3_V30/firmware.elf
+
+# Set up
+cpu MaximumBlockSize 1
+logLevel 3
+showAnalyzer usart1
+
+# Check vector table
+echo "=== Vector Table Analysis ==="
+echo "SP @ 0x08008000:"
+sysbus ReadDoubleWord 0x08008000
+echo "Reset @ 0x08008004:"
+sysbus ReadDoubleWord 0x08008004
+echo "NMI @ 0x08008008:"
+sysbus ReadDoubleWord 0x08008008
+echo "HardFault @ 0x0800800C:"
+sysbus ReadDoubleWord 0x0800800C
+echo "SVCall @ 0x0800802C:"
+sysbus ReadDoubleWord 0x0800802C
+echo "PendSV @ 0x08008038:"
+sysbus ReadDoubleWord 0x08008038
+echo "SysTick @ 0x0800803C:"
+sysbus ReadDoubleWord 0x0800803C
+
+# Set initial registers based on vector table
+cpu SP 0x20024000
+cpu PC 0x080100C4
+
+echo ""
+echo "=== Starting with proper reset vector ==="
+echo "Initial PC: 0x080100C4 (Reset_Handler)"
+echo "Initial SP: 0x20024000"
+
+# Start execution
+start
+
+# Run for a short time
+emulation RunFor "0.001"
+
+# Check state
+echo ""
+echo "=== After 1ms ==="
+echo "PC:"
+cpu PC
+echo "Instructions:"
+cpu ExecutedInstructions
+
+# Run for more
+emulation RunFor "0.01"
+
+echo ""
+echo "=== After 11ms total ==="
+echo "PC:"
+cpu PC
+echo "Instructions:"
+cpu ExecutedInstructions
+
+# Check UART status
+echo ""
+echo "=== UART Status ==="
+echo "USART1 ISR:"
+sysbus ReadDoubleWord 0x4001381C
+echo "USART1 CR1:"
+sysbus ReadDoubleWord 0x40013800
+
+# Run a bit more
+emulation RunFor "0.1"
+
+echo ""
+echo "=== Final State (after 111ms) ==="
+echo "PC:"
+cpu PC
+echo "Instructions:"
+cpu ExecutedInstructions

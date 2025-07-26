@@ -1,0 +1,47 @@
+:name: USB Debug Simple
+:description: Simple USB firmware debugging
+
+# Create machine
+mach create "USB_Debug"
+machine LoadPlatformDescription @stm32g0b1_usb_platform.repl
+
+# Load USB firmware
+sysbus LoadBinary @firmware/firmware_usb_v0.1.2.bin 0x08008000
+
+# Enable verbose logging
+logLevel 3
+
+# Manually set vector table values from the binary
+echo "Setting up from vector table..."
+sysbus.cpu SP 0x20024000
+sysbus.cpu PC 0x0800FDDC
+sysbus.cpu IsHalted false
+
+# Show initial state
+echo ""
+echo "Initial state:"
+sysbus.cpu SP
+sysbus.cpu PC
+
+# Start and run briefly
+echo ""
+echo "Starting emulation..."
+start
+
+# Let it run for a moment
+sleep 1
+
+# Check status
+echo ""
+echo "Status after 1 second:"
+echo "Is halted:"
+sysbus.cpu IsHalted
+echo "PC:"
+sysbus.cpu PC
+echo "Instructions executed:"
+sysbus.cpu ExecutedInstructions
+
+# If it crashed, show where
+echo ""
+echo "Checking for crash..."
+sysbus.cpu PC

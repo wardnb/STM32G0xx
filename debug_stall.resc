@@ -1,0 +1,45 @@
+# Debug the runtime stall issue
+
+# Load firmware
+mach create "Debug_Stall"
+machine LoadPlatformDescription @stm32g0b1_btt_skr.repl
+sysbus LoadELF @.pio/build/BTT_SKR_MINI_E3_V30/firmware.elf
+showAnalyzer sysbus.usart1
+
+# Enable more detailed logging to see what's happening
+logLevel 3
+
+echo "Loading firmware and tracking execution..."
+
+# Start and immediately pause to examine state
+start
+pause
+
+echo "Firmware loaded and paused. Checking initial state..."
+
+# Check PC and SP
+echo "Current PC: "
+cpu GetRegisterUnsafe 15
+echo "Current SP: "
+cpu GetRegisterUnsafe 13
+
+echo "Stepping through execution to find stall point..."
+
+# Step a few instructions to see progress
+step 10
+
+echo "After 10 steps - PC: "
+cpu GetRegisterUnsafe 15
+
+# Continue for a bit then check again
+start
+sleep 2
+pause
+
+echo "After 2 seconds - PC: "
+cpu GetRegisterUnsafe 15
+
+# Check if we're in an infinite loop
+step 5
+echo "After 5 more steps - PC: "
+cpu GetRegisterUnsafe 15

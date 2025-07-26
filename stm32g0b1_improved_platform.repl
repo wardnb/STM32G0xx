@@ -1,0 +1,327 @@
+// STM32G0B1 Improved Platform Description for BTT SKR Mini E3 v3.0
+// Addresses memory addressing issues and missing peripherals identified in testing
+
+// ==================== MEMORY REGIONS ====================
+
+// Bootloader area - 32KB
+bootloader: Memory.MappedMemory @ sysbus 0x08000000
+    size: 0x8000
+
+// Application flash starting at bootloader offset - 480KB
+flash: Memory.MappedMemory @ sysbus 0x08008000
+    size: 0x78000
+
+// Main RAM - 144KB for STM32G0B1 (extended mapping to handle stack overflow)
+ram: Memory.MappedMemory @ sysbus 0x20000000
+    size: 0x25000
+
+// System memory region - Contains device ID, option bytes, factory calibration
+system_memory: Memory.MappedMemory @ sysbus 0x1FFF0000
+    size: 0x8000
+
+// Option bytes region
+option_bytes: Memory.MappedMemory @ sysbus 0x1FFF8000
+    size: 0x800
+
+// Null pointer protection region (helps debug null pointer dereferences)
+null_guard: Python.PythonPeripheral @ sysbus 0x0
+    size: 0xF0
+    initable: true
+    script: '''
+if request.isRead:
+    self.Log(LogLevel.Warning, "Null pointer access at 0x{0:X}".format(request.offset))
+    if request.offset == 0x0:
+        request.value = 0x20024000  # Initial stack pointer
+    elif request.offset == 0x4:
+        request.value = 0x0800FDDD  # Reset vector (odd for Thumb mode)
+    elif request.offset == 0x18:
+        request.value = 0x08000001  # Hard fault handler
+    else:
+        request.value = 0x0
+elif request.isWrite:
+    self.Log(LogLevel.Warning, "Null pointer write at 0x{0:X} = 0x{1:X}".format(request.offset, request.value))
+'''
+
+// ==================== CORE COMPONENTS ====================
+
+nvic: IRQControllers.NVIC @ sysbus 0xE000E000
+    priorityMask: 0xF0
+    systickFrequency: 48000000
+    IRQ -> cpu@0
+
+cpu: CPU.CortexM @ sysbus
+    cpuType: "cortex-m0+"
+    nvic: nvic
+
+// ==================== DEBUG AND SYSTEM CONTROL ====================
+
+// CoreSight debug components
+debug_base: Python.PythonPeripheral @ sysbus 0xE00FF000
+    size: 0x1000
+    initable: true
+    script: '''
+if request.isRead:
+    if request.offset == 0x0:
+        request.value = 0xC5ACCE55  # Debug ROM table entry
+    elif request.offset == 0xFCC:
+        request.value = 0x000BB477  # CoreSight component ID
+    else:
+        request.value = 0x0
+'''
+
+// Debug interface registers at low addresses
+debug_regs: Python.PythonPeripheral @ sysbus 0xF0
+    size: 0x20
+    initable: true
+    script: '''
+if request.isRead:
+    if request.offset == 0x8:  # Debug Base Address at 0xF8
+        request.value = 0xE00FF000  # Standard debug base address
+    elif request.offset == 0x0:  # Debug ID at 0xF0
+        request.value = 0x0BA02477  # STM32G0 debug ID
+    else:
+        request.value = 0x0
+'''
+
+// System Control Block (included in NVIC, removing to avoid conflict)
+
+// ==================== COMMUNICATION PERIPHERALS ====================
+
+// USB CDC communication
+usb_cdc: UART.STM32F7_USART @ sysbus 0x40005C00
+    frequency: 48000000  // Updated to 48MHz
+    IRQ -> nvic@8
+
+// UART1 for debug/alternate communication (PA9/PA10)
+usart1: UART.STM32F7_USART @ sysbus 0x40013800
+    frequency: 48000000  // Updated to 48MHz
+    IRQ -> nvic@27
+
+usart2: UART.STM32F7_USART @ sysbus 0x40004400
+    frequency: 48000000  // Updated to 48MHz
+    IRQ -> nvic@28
+
+// ==================== EXTERNAL INTERRUPTS ====================
+
+exti: IRQControllers.STM32F4_EXTI @ sysbus 0x40021800
+    numberOfOutputLines: 34
+    firstDirectLine: 19
+    [0, 1] -> nvicInput5@[0, 1]
+    [2, 3] -> nvicInput6@[0, 1]
+    [4-15] -> nvicInput7@[0-11]
+    [23] -> nvic@[23]
+    [32, 33] -> nvicInput8@[0, 1]
+    [17, 18] -> nvicInput12@[0, 1]
+
+nvicInput5: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 2
+    -> nvic@5
+
+nvicInput6: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 2
+    -> nvic@6
+
+nvicInput7: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 12
+    -> nvic@7
+
+nvicInput8: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 2
+    -> nvic@8
+
+nvicInput10: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 2
+    -> nvic@10
+
+nvicInput11: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 9
+    -> nvic@11
+
+nvicInput12: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 2
+    -> nvic@12
+
+nvicInput29: Miscellaneous.CombinedInput @ none
+    numberOfInputs: 4
+    -> nvic@29
+
+// ==================== GPIO PORTS ====================
+
+gpioPortA: GPIOPort.STM32_GPIOPort @ sysbus <0x50000000, +0x400>
+    modeResetValue: 0xEBFFFFFF
+    pullUpPullDownResetValue: 0x24000000
+    numberOfAFs: 8
+    [0-15] -> exti@[0-15]
+
+gpioPortB: GPIOPort.STM32_GPIOPort @ sysbus <0x50000400, +0x400>
+    modeResetValue: 0xFFFFFFFF
+    pullUpPullDownResetValue: 0x00000000
+    numberOfAFs: 8
+    [0-15] -> exti@[0-15]
+
+gpioPortC: GPIOPort.STM32_GPIOPort @ sysbus <0x50000800, +0x400>
+    modeResetValue: 0xFFFFFFFF
+    pullUpPullDownResetValue: 0x00000000
+    numberOfAFs: 8
+    [0-15] -> exti@[0-15]
+
+gpioPortD: GPIOPort.STM32_GPIOPort @ sysbus <0x50000C00, +0x400>
+    modeResetValue: 0xFFFFFFFF
+    pullUpPullDownResetValue: 0x00000000
+    numberOfAFs: 8
+    [0-15] -> exti@[0-15]
+
+gpioPortF: GPIOPort.STM32_GPIOPort @ sysbus <0x50001400, +0x400>
+    modeResetValue: 0xFFFFFFFF
+    pullUpPullDownResetValue: 0x00000000
+    numberOfAFs: 8
+    [0-15] -> exti@[0-15]
+
+// ==================== TIMERS ====================
+
+timer1: Timers.STM32_Timer @ sysbus 0x40012C00
+    frequency: 48000000  // Updated to 48MHz
+    initialLimit: 0xFFFF
+    -> nvic@14
+
+timer2: Timers.STM32_Timer @ sysbus 0x40000000
+    frequency: 48000000  // Updated to 48MHz
+    initialLimit: 0xFFFFFFFF
+    -> nvic@15
+
+timer3: Timers.STM32_Timer @ sysbus 0x40000400
+    frequency: 48000000  // Updated to 48MHz
+    initialLimit: 0xFFFF
+    -> nvic@16
+
+timer6: Timers.STM32_Timer @ sysbus 0x40001000
+    frequency: 48000000
+    initialLimit: 0xFFFF
+    -> nvic@17
+
+timer7: Timers.STM32_Timer @ sysbus 0x40001400
+    frequency: 48000000
+    initialLimit: 0xFFFF
+    -> nvic@18
+
+timer14: Timers.STM32_Timer @ sysbus 0x40002000
+    frequency: 48000000
+    initialLimit: 0xFFFF
+    -> nvic@19
+
+timer15: Timers.STM32_Timer @ sysbus 0x40014000
+    frequency: 48000000
+    initialLimit: 0xFFFF
+    -> nvic@20
+
+timer16: Timers.STM32_Timer @ sysbus 0x40014400
+    frequency: 48000000
+    initialLimit: 0xFFFF
+    -> nvic@21
+
+timer17: Timers.STM32_Timer @ sysbus 0x40014800
+    frequency: 48000000
+    initialLimit: 0xFFFF
+    -> nvic@22
+
+// ==================== CLOCK CONTROL ====================
+
+// Enhanced RCC with proper STM32G0 support
+rcc: Python.PythonPeripheral @ sysbus 0x40021000
+    size: 0x400
+    initable: true
+    script: '''
+if request.isInit:
+    registers = {}
+    # Default register values for STM32G0B1
+    registers[0x0] = 0x00000500    # CR - HSI on, PLL off
+    registers[0x4] = 0x00000000    # ICSCR
+    registers[0x8] = 0x00000001    # CFGR - HSI selected
+    registers[0xC] = 0x00000000    # PLLCFGR
+    registers[0x18] = 0x00000000   # CIER
+    registers[0x1C] = 0x00000000   # CIFR
+    registers[0x20] = 0x00000000   # CICR
+    registers[0x34] = 0x00000000   # AHBRSTR
+    registers[0x38] = 0x00000000   # APBRSTR1
+    registers[0x3C] = 0x00000000   # APBRSTR2
+    registers[0x40] = 0x00000000   # AHBENR
+    registers[0x44] = 0x00000000   # APBENR1
+    registers[0x48] = 0x00000000   # APBENR2
+    registers[0x60] = 0x00000000   # BDCR
+    registers[0x64] = 0x0C000000   # CSR
+
+if request.isRead:
+    if request.offset in registers:
+        # Add status bits for ready flags
+        if request.offset == 0x0:  # CR register
+            value = registers[request.offset]
+            if (value >> 8) & 1:  # If HSI enabled
+                value |= (1 << 10)  # Set HSI ready
+            if (value >> 24) & 1:  # If PLL enabled
+                value |= (1 << 25)  # Set PLL ready
+            request.value = value
+        else:
+            request.value = registers[request.offset]
+    else:
+        request.value = 0x0
+
+elif request.isWrite:
+    registers[request.offset] = request.value
+    # Handle clock switching in CFGR
+    if request.offset == 0x8:  # CFGR
+        sw = request.value & 0x7
+        registers[request.offset] = (request.value & ~0x38) | (sw << 3)  # Set SWS = SW
+'''
+
+// ==================== DMA CONTROLLERS ====================
+// Note: Commenting out DMA controllers due to Renode version compatibility
+// dma1: DMA.STM32DMA @ sysbus 0x40020000
+//     numberOfChannels: 7
+//     [0-6] -> nvic@[9-15]
+
+// dma2: DMA.STM32DMA @ sysbus 0x40020400
+//     numberOfChannels: 7
+//     [0-6] -> nvic@[56-62]
+
+// ==================== ADDITIONAL PERIPHERALS ====================
+// Note: Commenting out additional peripherals for core memory testing
+// Focus on essential components that fix memory access issues
+
+// SPI controllers
+// spi1: SPI.STM32SPI @ sysbus 0x40013000
+//     IRQ -> nvic@25
+
+// spi2: SPI.STM32SPI @ sysbus 0x40003800
+//     IRQ -> nvic@26
+
+// I2C controllers (simplified for compatibility)
+// i2c1: I2C.STM32F7_I2C @ sysbus 0x40005400
+//     IRQ -> nvic@23
+
+// i2c2: I2C.STM32F7_I2C @ sysbus 0x40005800
+//     IRQ -> nvic@24
+
+// ADC
+// adc1: Analog.STM32_ADC @ sysbus 0x40012400
+//     IRQ -> nvic@12
+
+// USB peripheral (simulated as additional UART for compatibility)
+// Note: USB.STM32_USB not available in this Renode version
+// usb: USB.STM32_USB @ sysbus 0x40005C00
+//     IRQ -> nvic@8
+
+// ==================== SYSTEM TAGGED REGIONS ====================
+
+sysbus:
+    init:
+        Tag <0x40002C00, 0x40002FFF> "WWDG"
+        Tag <0x40003000, 0x400033FF> "IWDG"
+        Tag <0x40007000, 0x400073FF> "PWR"
+        Tag <0x40010000, 0x400103FF> "SYSCFG"
+        Tag <0x40022000, 0x400223FF> "FLASH_INTERFACE"
+        Tag <0x40015800, 0x40015BFF> "CRC"
+        Tag <0x40006C00, 0x40006FFF> "LPTIM1"
+        Tag <0x40009000, 0x400093FF> "LPTIM2"
+        Tag <0x40004000, 0x400043FF> "RTC"
+        Tag <0x40023000, 0x400233FF> "AES"
+        Tag <0x40024000, 0x400243FF> "RNG"

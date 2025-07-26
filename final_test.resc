@@ -1,0 +1,49 @@
+:name: Final grblHAL Test
+:description: Test grblHAL firmware
+
+# Create machine
+mach create "grblHAL"
+machine LoadPlatformDescription @stm32g0b1_btt_skr.repl
+
+# Load firmware
+sysbus LoadELF @.pio/build/BTT_SKR_MINI_E3_V30/firmware.elf
+
+# Enable logging
+logLevel 2
+
+# Create UART terminal
+emulation CreateServerSocketTerminal 3456 "uart_terminal" false
+connector Connect usart1 uart_terminal
+
+# Monitor key GPIO pins
+sysbus.gpioPortB.id13 AddStateChangedHook "echo 'X-Step: {0}'"
+sysbus.gpioPortB.id10 AddStateChangedHook "echo 'Y-Step: {0}'"
+sysbus.gpioPortB.id0 AddStateChangedHook "echo 'Z-Step: {0}'"
+
+# Direct initialization
+echo "=== STM32G0xx grblHAL Test ==="
+echo ""
+echo "Setting initial CPU state from vector table..."
+sysbus.cpu SP 0x20024000
+sysbus.cpu PC 0x080100C4
+sysbus.cpu IsHalted false
+
+echo "Starting emulation..."
+start
+
+echo ""
+echo "Connect to UART: telnet localhost 3456"
+echo ""
+echo "Monitoring for 5 seconds..."
+
+# Let it run
+pause 5000
+
+echo ""
+echo "Final state:"
+echo "PC:"
+sysbus.cpu PC
+echo "Instructions:"
+sysbus.cpu ExecutedInstructions
+echo ""
+echo "Send grblHAL commands via telnet terminal"

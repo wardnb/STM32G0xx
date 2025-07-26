@@ -1,0 +1,65 @@
+:name: Quick Improved Platform Test
+:description: Quick test to see if improved platform resolves initial crashes
+
+# Create machine with improved platform
+mach create "USB_Quick_Test"
+machine LoadPlatformDescription @stm32g0b1_improved_platform.repl
+
+# Load the final USB firmware
+sysbus LoadBinary @firmware/grblHAL_USB_48MHz_FINAL.bin 0x08008000
+
+# Set CPU state
+cpu SP 0x20024000
+cpu PC 0x0800FDDC
+
+echo "=== QUICK IMPROVED PLATFORM TEST ==="
+echo "Testing if memory access issues are resolved..."
+echo ""
+
+# Start execution
+start
+
+# Quick check at 0.1 seconds
+sleep 0.1
+echo "Status at 0.1 seconds:"
+echo "PC: "
+cpu PC
+echo "Instructions: "
+cpu ExecutedInstructions
+
+if cpu.PC == 0 then
+  echo "CRASHED EARLY - still have platform issues"
+else
+  # Check at 0.5 seconds
+  sleep 0.4
+  echo ""
+  echo "Status at 0.5 seconds:"
+  echo "PC: "
+  cpu PC
+  echo "Instructions: "
+  cpu ExecutedInstructions
+  
+  if cpu.PC == 0 then
+    echo "CRASHED LATER - some improvement but still issues"
+  else
+    # Final check at 2 seconds
+    sleep 1.5
+    echo ""
+    echo "Status at 2 seconds:"
+    echo "PC: "
+    cpu PC
+    echo "Instructions: "
+    cpu ExecutedInstructions
+    
+    if cpu.PC == 0 then
+      echo "CRASHED AFTER RUNNING - significant improvement!"
+    else
+      echo "SUCCESS - Firmware running stably!"
+    end
+  end
+end
+
+echo ""
+echo "Comparison with previous results:"
+echo "- Original platform: crashed at ~17,437 instructions"
+echo "- This test: [see above]"

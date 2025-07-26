@@ -1,0 +1,42 @@
+:name: UART Firmware Test
+:description: Test UART firmware to compare with USB
+
+# Create machine
+mach create "UART_Debug"
+machine LoadPlatformDescription @stm32g0b1_btt_skr.repl
+
+# Load UART firmware (known working)
+sysbus LoadBinary @firmware/v0.1.0/grblHAL-STM32G0xx-BTT_SKR_MINI_E3_V30-uart-v0.1.0.bin 0x08008000
+
+# Enable logging
+logLevel 3
+
+# Get vector table info
+echo "UART Firmware vector table:"
+echo "SP value at 0x08008000:"
+sysbus ReadDoubleWord 0x08008000
+echo "PC value at 0x08008004:"
+sysbus ReadDoubleWord 0x08008004
+
+# Set up CPU from vector table
+sysbus.cpu SP 0x20024000
+sysbus.cpu PC 0x0800FDDC
+sysbus.cpu IsHalted false
+
+# Start
+echo ""
+echo "Starting UART firmware..."
+start
+
+# Let it run
+sleep 1
+
+# Check status
+echo ""
+echo "UART firmware status:"
+echo "Is halted:"
+sysbus.cpu IsHalted
+echo "PC:"
+sysbus.cpu PC
+echo "Instructions executed:"
+sysbus.cpu ExecutedInstructions

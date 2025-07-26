@@ -1,0 +1,54 @@
+:name: Test Partial USB Fix
+:description: Test USB firmware with USB peripheral clock fix but 64MHz clock
+
+# Create machine
+mach create "USB_PartialFix"
+machine LoadPlatformDescription @stm32g0b1_usb_platform.repl
+
+# Load USB firmware with partial fix
+sysbus LoadBinary @firmware/firmware_usb_v0.1.4_partial_fix.bin 0x08008000
+
+# Set CPU state
+cpu SP 0x20024000
+cpu PC 0x0800FDDC
+
+# Configure analyzers
+showAnalyzer sysbus.usb_cdc
+
+echo "USB firmware with partial fix:"
+echo "- Added USB peripheral clock enable (CRITICAL)"
+echo "- Resolved interrupt handler conflict"
+echo "- Still using 64MHz USB clock (may cause issues)"
+echo ""
+echo "Starting emulation..."
+start
+
+# Monitor stability
+sleep 5
+
+echo ""
+echo "Status after 5 seconds:"
+echo "PC:"
+cpu PC
+echo "Is Halted:"
+cpu IsHalted
+echo "Instructions executed:"
+cpu ExecutedInstructions
+
+# Test USB communication even with wrong clock
+echo ""
+echo "Testing USB communication (even with wrong clock frequency)..."
+sysbus.usb_cdc WriteChar 0x3F
+sysbus.usb_cdc WriteChar 0x0A
+
+sleep 1
+
+echo ""
+echo "Analysis:"
+if cpu.IsHalted != True then
+  echo "SUCCESS: Firmware is stable - USB peripheral clock fix worked!"
+  echo "USB communication may still fail due to 64MHz vs 48MHz clock mismatch"
+  echo "But the system no longer crashes during initialization"
+else
+  echo "FAILED: Still crashing, more issues remain"
+end

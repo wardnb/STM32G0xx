@@ -1,0 +1,98 @@
+:name: Test Improved Platform
+:description: Test USB firmware with improved STM32G0B1 platform addressing memory issues
+
+# Create machine with improved platform
+mach create "USB_Improved_Platform"
+machine LoadPlatformDescription @stm32g0b1_improved_platform.repl
+
+# Load the final USB firmware
+sysbus LoadBinary @firmware/grblHAL_USB_48MHz_FINAL.bin 0x08008000
+
+# Set CPU state
+cpu SP 0x20024000
+cpu PC 0x0800FDDC
+
+# Configure analyzers
+showAnalyzer sysbus.usb_cdc
+showAnalyzer sysbus.usart1
+
+echo "=== IMPROVED PLATFORM TEST ==="
+echo "Platform improvements:"
+echo "✅ Extended RAM mapping (144KB + guard region)"
+echo "✅ Added system memory region (device ID, calibration)"
+echo "✅ Added null pointer protection with debug logging"
+echo "✅ Enhanced debug components (CoreSight)"
+echo "✅ Improved RCC clock control simulation"
+echo "✅ Added missing timers and peripherals"
+echo "✅ Updated all frequencies to 48MHz"
+echo "✅ Cortex-M0+ configuration (was M0)"
+echo ""
+
+# Start execution
+start
+
+# Monitor at intervals
+sleep 1
+echo "Status at 1 second:"
+echo "PC: "
+cpu PC
+echo "Instructions: "
+cpu ExecutedInstructions
+
+sleep 2
+echo ""
+echo "Status at 3 seconds:"
+echo "PC: "
+cpu PC
+echo "Instructions: "
+cpu ExecutedInstructions
+
+sleep 5
+echo ""
+echo "Status at 8 seconds:"
+echo "PC: "
+cpu PC
+echo "Instructions: "
+cpu ExecutedInstructions
+
+# Test communication
+echo ""
+echo "Testing USB CDC communication..."
+sysbus.usb_cdc WriteChar 0x3F  # '?'
+sysbus.usb_cdc WriteChar 0x0A  # newline
+
+sleep 1
+
+sysbus.usb_cdc WriteChar 0x24  # '$'
+sysbus.usb_cdc WriteChar 0x49  # 'I'
+sysbus.usb_cdc WriteChar 0x0A  # newline
+
+sleep 1
+
+echo ""
+echo "=== FINAL RESULTS ==="
+echo "PC: "
+cpu PC
+echo "Total instructions: "
+cpu ExecutedInstructions
+
+if cpu.PC == 0 then
+  echo ""
+  echo "RESULT: Firmware crashed"
+  echo "Need to check logs for remaining issues"
+else
+  echo ""
+  echo "RESULT: Firmware running successfully!"
+  echo "Platform improvements resolved the issues!"
+end
+
+echo ""
+echo "Previous instruction counts:"
+echo "- Pre-built UART: 539 instructions"
+echo "- New UART: 60 instructions"
+echo "- Old USB (64MHz): 17,437 instructions"
+echo "- Final USB (original platform): [crashed]"
+echo "- This test (improved platform): [see above]"
+echo ""
+echo "Check analyzers for any communication responses"
+echo "Check log for null pointer access warnings (if any)"

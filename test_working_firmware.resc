@@ -1,0 +1,43 @@
+# 🎉 TEST THE WORKING FIRMWARE! 🎉
+
+# Load the fixed firmware
+i @test_btt_skr_mini_e3_v30.resc
+
+# Wait for full boot
+sleep 5
+
+echo "🎉 FIRMWARE IS RUNNING! Testing grblHAL communication..."
+
+# Test grblHAL status
+echo "Sending: $$"
+sysbus.usart1 WriteChar 0x24
+sysbus.usart1 WriteChar 0x24
+sysbus.usart1 WriteChar 0x0A
+
+sleep 3
+
+# Test grblHAL version
+echo "Sending: \$I"
+sysbus.usart1 WriteChar 0x24
+sysbus.usart1 WriteChar 0x49
+sysbus.usart1 WriteChar 0x0A
+
+sleep 3
+
+# Test basic G-code
+echo "Sending: G21"
+sysbus.usart1 WriteChar 0x47
+sysbus.usart1 WriteChar 0x32
+sysbus.usart1 WriteChar 0x31
+sysbus.usart1 WriteChar 0x0A
+
+sleep 3
+
+# Test real-time status
+echo "Sending: ?"
+sysbus.usart1 WriteChar 0x3F
+
+sleep 3
+
+echo "✅ ALL COMMANDS SENT - CHECK UART ANALYZER FOR RESPONSES!"
+echo "grblHAL should be responding with status and version info"

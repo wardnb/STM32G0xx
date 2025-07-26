@@ -1,0 +1,51 @@
+:name: Trace Crash
+:description: Trace exactly where the USB firmware crashes
+
+# Create machine
+mach create "TraceUSB"
+machine LoadPlatformDescription @stm32g0b1_usb_platform.repl
+
+# Load USB firmware
+sysbus LoadBinary @firmware/firmware_usb_v0.1.2.bin 0x08008000
+
+# Set CPU state
+cpu SP 0x20024000
+cpu PC 0x0800FDDC
+
+# Enable execution tracing
+cpu LogFunctionNames true
+
+# Start
+echo "Starting USB firmware with tracing..."
+start
+
+# Run for just a short time
+sleep 0.1
+
+# Stop and check
+pause
+
+echo ""
+echo "Current state:"
+echo "PC:"
+cpu PC
+echo "Instructions executed:"  
+cpu ExecutedInstructions
+
+echo ""
+echo "Last few executed addresses (check log above):"
+
+# If crashed, we're done. If not, continue a bit more
+echo ""
+echo "Continuing..."
+start
+
+sleep 0.5
+pause
+
+echo ""
+echo "Final state:"
+echo "PC:"
+cpu PC
+echo "Instructions executed:"
+cpu ExecutedInstructions

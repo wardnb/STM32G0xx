@@ -1,0 +1,68 @@
+:name: Definitive UART Test
+:description: Test UART firmware to establish baseline
+
+# Create machine
+mach create "UART_Baseline"
+machine LoadPlatformDescription @stm32g0b1_btt_skr.repl
+
+# Load the freshly built UART firmware (with reverted clock)
+sysbus LoadBinary @.pio/build/BTT_SKR_MINI_E3_V30/firmware.bin 0x08008000
+
+# Set CPU state
+cpu SP 0x20024000
+cpu PC 0x0800FDDC
+
+# Create UART analyzer
+showAnalyzer sysbus.usart1
+
+echo "=== DEFINITIVE UART FIRMWARE TEST ==="
+echo "Firmware: Freshly built with reverted clock settings"
+echo "Expected: Should run stably without crashes"
+echo ""
+
+# Start and monitor
+start
+
+# Test multiple intervals to see stability pattern
+sleep 1
+echo "Status at 1 second:"
+echo "PC: " 
+cpu PC
+echo "Instructions: "
+cpu ExecutedInstructions
+
+sleep 2  
+echo ""
+echo "Status at 3 seconds total:"
+echo "PC: "
+cpu PC  
+echo "Instructions: "
+cpu ExecutedInstructions
+
+sleep 5
+echo ""
+echo "Status at 8 seconds total:"
+echo "PC: "
+cpu PC
+echo "Instructions: "
+cpu ExecutedInstructions
+
+# Test UART communication
+echo ""
+echo "Testing UART communication..."
+sysbus.usart1 WriteChar 0x3F  # '?'
+sysbus.usart1 WriteChar 0x0A  # newline
+
+sleep 1
+
+echo ""
+echo "=== UART TEST RESULT ==="
+if cpu.PC != 0 then
+  echo "SUCCESS: UART firmware runs stably in Renode"
+  echo "Final PC: "
+  cpu PC
+  echo "Total instructions: "
+  cpu ExecutedInstructions
+else
+  echo "FAILED: UART firmware also crashes - platform issue"
+end

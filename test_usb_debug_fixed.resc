@@ -1,0 +1,42 @@
+:name: USB Debug Fixed
+:description: Test USB with debug registers fixed
+
+# Create machine  
+mach create "USB_DebugFixed"
+machine LoadPlatformDescription @stm32g0b1_usb_platform.repl
+
+# Load USB firmware binary
+sysbus LoadBinary @firmware/firmware_usb_v0.1.2.bin 0x08008000
+
+# Set CPU state from vector table
+cpu SP 0x20024000
+cpu PC 0x0800FDDC
+
+# Configure analyzers
+showAnalyzer sysbus.usb_cdc
+
+echo "USB firmware loaded with debug fix"
+echo "Starting emulation..."
+start
+
+# Monitor for longer
+sleep 5
+
+echo ""
+echo "Status after 5 seconds:"
+echo "PC:"
+cpu PC
+echo "Is Halted:"
+cpu IsHalted
+echo "Instructions executed:"
+cpu ExecutedInstructions
+
+# Try communication if it's still running
+echo ""
+echo "Attempting USB communication..."
+sysbus.usb_cdc WriteChar 0x3F
+sysbus.usb_cdc WriteChar 0x0A
+
+sleep 1
+
+echo "Test complete - check analyzer for responses"

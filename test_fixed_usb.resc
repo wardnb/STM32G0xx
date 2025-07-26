@@ -1,0 +1,67 @@
+:name: Test Fixed USB
+:description: Test the fixed USB firmware with proper clocks and peripheral init
+
+# Create machine
+mach create "USB_Fixed"
+machine LoadPlatformDescription @stm32g0b1_usb_platform.repl
+
+# Load the FIXED USB firmware
+sysbus LoadBinary @firmware/firmware_usb_v0.1.3_fixed.bin 0x08008000
+
+# Set CPU state from vector table
+cpu SP 0x20024000
+cpu PC 0x0800FDDC
+
+# Configure analyzers
+showAnalyzer sysbus.usb_cdc
+showAnalyzer sysbus.usart1
+
+echo "Fixed USB firmware loaded:"
+echo "- Corrected PLL: 48MHz USB clock, 64MHz system clock"  
+echo "- Added USB peripheral clock enable"
+echo "- Resolved interrupt handler conflict"
+echo ""
+echo "Starting emulation..."
+start
+
+# Monitor for longer to see if it stays stable
+sleep 3
+
+echo ""
+echo "Status after 3 seconds:"
+echo "PC:"
+cpu PC
+echo "Is Halted:"  
+cpu IsHalted
+echo "Instructions executed:"
+cpu ExecutedInstructions
+
+# If still running, try USB communication
+if cpu.IsHalted != True then
+  echo ""
+  echo "SUCCESS: Firmware is still running! Testing USB communication..."
+  
+  # Send grblHAL status command
+  echo "Sending: ?"
+  sysbus.usb_cdc WriteChar 0x3F
+  sysbus.usb_cdc WriteChar 0x0A
+  
+  sleep 1
+  
+  # Send version command  
+  echo "Sending: \$I"
+  sysbus.usb_cdc WriteChar 0x24
+  sysbus.usb_cdc WriteChar 0x49  
+  sysbus.usb_cdc WriteChar 0x0A
+  
+  sleep 1
+  
+  echo "Check USB_CDC_Analyzer window for grblHAL responses!"
+else
+  echo ""
+  echo "FAILED: Firmware crashed at PC 0x"
+  cpu PC
+end
+
+echo ""
+echo "Test complete - USB firmware stability test"

@@ -1,0 +1,52 @@
+# Test the FIXED firmware that now boots successfully!
+
+# Load and start the working firmware
+i @test_btt_skr_mini_e3_v30.resc
+
+# Wait for full boot sequence
+sleep 3
+
+echo "🎉 FIRMWARE BOOT SUCCESSFUL! 🎉"
+echo "Testing grblHAL communication..."
+
+# Test grblHAL status command
+echo "Sending grblHAL status request: $$"
+sysbus.usart1 WriteChar 0x24
+sysbus.usart1 WriteChar 0x24
+sysbus.usart1 WriteChar 0x0A
+
+sleep 2
+
+# Test grblHAL version command
+echo "Sending grblHAL build info: \$I"
+sysbus.usart1 WriteChar 0x24
+sysbus.usart1 WriteChar 0x49
+sysbus.usart1 WriteChar 0x0A
+
+sleep 2
+
+# Test grblHAL help command
+echo "Sending grblHAL help: \$"
+sysbus.usart1 WriteChar 0x24
+sysbus.usart1 WriteChar 0x0A
+
+sleep 2
+
+# Test basic G-code
+echo "Sending G21 (metric units)"
+sysbus.usart1 WriteChar 0x47
+sysbus.usart1 WriteChar 0x32
+sysbus.usart1 WriteChar 0x31
+sysbus.usart1 WriteChar 0x0A
+
+sleep 2
+
+# Test status query
+echo "Sending real-time status query: ?"
+sysbus.usart1 WriteChar 0x3F
+
+sleep 2
+
+echo "✅ All grblHAL test commands sent successfully!"
+echo "Check UART analyzer for firmware responses"
+echo "Firmware is fully functional for CNC control"

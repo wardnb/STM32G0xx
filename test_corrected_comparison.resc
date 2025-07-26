@@ -1,0 +1,66 @@
+:name: Corrected Platform Comparison
+:description: Compare platforms using proper Renode commands
+
+echo "=== CORRECTED PLATFORM COMPARISON ==="
+echo ""
+
+# Test original platform first
+echo "Testing original platform..."
+mach create "Test1"
+machine LoadPlatformDescription @stm32g0b1_usb_platform.repl
+sysbus LoadBinary @firmware/grblHAL_USB_48MHz_FINAL.bin 0x08008000
+cpu SP 0x20024000
+cpu PC 0x0800FDDC
+
+# Execute single step using proper command
+cpu Step 1
+echo "Original - PC after 1 step: "
+cpu PC
+echo "Original - Instructions: "
+cpu ExecutedInstructions
+
+# Try a few more steps if it didn't crash
+cpu Step 10
+echo "Original - PC after 11 steps: "
+cpu PC
+echo "Original - Instructions: "
+cpu ExecutedInstructions
+
+machine Clear
+echo ""
+
+# Test improved platform
+echo "Testing improved platform..."
+mach create "Test2"
+machine LoadPlatformDescription @stm32g0b1_improved_platform.repl
+sysbus LoadBinary @firmware/grblHAL_USB_48MHz_FINAL.bin 0x08008000
+cpu SP 0x20024000
+cpu PC 0x0800FDDC
+
+# Execute steps using proper command
+cpu Step 1
+echo "Improved - PC after 1 step: "
+cpu PC
+echo "Improved - Instructions: "
+cpu ExecutedInstructions
+
+# Try more steps
+cpu Step 100
+echo "Improved - PC after 101 steps: "
+cpu PC
+echo "Improved - Instructions: "
+cpu ExecutedInstructions
+
+# Try running for a short time
+start
+sleep 0.1
+pause
+echo "Improved - After 0.1s execution: "
+cpu PC
+echo "Improved - Total instructions: "
+cpu ExecutedInstructions
+
+echo ""
+echo "=== COMPARISON RESULTS ==="
+echo "If improved platform shows higher instruction counts and non-zero PC,"
+echo "then the memory access improvements are working!"

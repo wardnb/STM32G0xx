@@ -1,0 +1,45 @@
+:name: Trace Fixed Firmware
+:description: Trace the fixed firmware to see where it crashes
+
+# Create machine
+mach create "TraceFix"
+machine LoadPlatformDescription @stm32g0b1_usb_platform.repl
+
+# Load fixed firmware
+sysbus LoadBinary @firmware/firmware_usb_v0.1.3_fixed.bin 0x08008000
+
+# Set CPU state
+cpu SP 0x20024000
+cpu PC 0x0800FDDC
+
+# Start execution and let it run to the crash point
+echo "Starting fixed firmware with detailed logging..."
+start
+
+# Run until it crashes or gets close to the crash point (17,437 / 0x441D instructions)
+cpu Step 17000
+
+# Pause and check where we are
+pause
+
+echo ""
+echo "Status at 17,000 instructions:"
+echo "PC:"
+cpu PC
+echo "Instructions executed:"
+cpu ExecutedInstructions
+
+# Continue to the crash
+echo ""
+echo "Continuing to crash point..."
+start
+
+sleep 1
+pause
+
+echo ""
+echo "Final crash state:"
+echo "PC:"
+cpu PC
+echo "Instructions executed:"
+cpu ExecutedInstructions

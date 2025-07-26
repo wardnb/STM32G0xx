@@ -23,6 +23,9 @@
 
 #include "main.h"
 #include "driver.h"
+
+// USB clock will be handled via peripheral clock source selection
+// For now, use standard PLL configuration and rely on USB peripheral clock enable
 #include "grbl/grbllib.h"
 
 // Disable USB for now
@@ -78,8 +81,10 @@ void SystemClock_Config(void)
     /** Initializes the RCC Oscillators according to the specified parameters
     * in the RCC_OscInitTypeDef structure.
     */
-    // Standard configuration for both UART and USB modes
-    // STM32G0xx uses internal HSI for USB clock generation
+    // PLL configuration for 48MHz USB support
+    // HSI(16MHz) × PLLN(6) = 96MHz VCO
+    // PLLR(÷2) = 48MHz system clock, PLLQ(÷2) = 48MHz USB clock (perfect!)
+    // Note: System runs at 48MHz instead of 64MHz (25% slower but USB compliant)
     RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI;
     RCC_OscInitStruct.HSIState = RCC_HSI_ON;
     RCC_OscInitStruct.HSIDiv = RCC_HSI_DIV1;
@@ -87,10 +92,10 @@ void SystemClock_Config(void)
     RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
     RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSI;
     RCC_OscInitStruct.PLL.PLLM = RCC_PLLM_DIV1;
-    RCC_OscInitStruct.PLL.PLLN = 8;
+    RCC_OscInitStruct.PLL.PLLN = 6;   // 16MHz × 6 = 96MHz VCO
     RCC_OscInitStruct.PLL.PLLP = RCC_PLLP_DIV2;
-    RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;
-    RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;
+    RCC_OscInitStruct.PLL.PLLQ = RCC_PLLQ_DIV2;  // 96MHz ÷ 2 = 48MHz USB (perfect!)
+    RCC_OscInitStruct.PLL.PLLR = RCC_PLLR_DIV2;  // 96MHz ÷ 2 = 48MHz system
     if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
     {
         Error_Handler();

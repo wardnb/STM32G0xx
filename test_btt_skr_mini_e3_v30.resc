@@ -1,0 +1,24 @@
+# STM32G0B1 BTT SKR Mini E3 v3.0 Renode test script
+# Test grblHAL firmware for CNC controller
+
+# Create machine and set name
+mach create "BTT_SKR_Mini_E3_v30"
+machine LoadPlatformDescription @stm32g0b1_btt_skr.repl
+
+# Load the UART firmware
+sysbus LoadELF @.pio/build/BTT_SKR_MINI_E3_V30/firmware.elf
+
+# Configure UART1 for grblHAL communication (115200 baud)
+showAnalyzer sysbus.usart1
+
+# Set up logging
+logLevel 3
+
+# Start the simulation
+start
+
+# Show machine status
+echo "STM32G0B1 BTT SKR Mini E3 v3.0 firmware loaded and started"
+echo "UART1 analyzer available for grblHAL communication"
+echo "Type 'help' in Renode monitor for available commands"
+echo "Use 'sysbus.usart1 WriteString \"$$\\n\"' to send grblHAL status command"

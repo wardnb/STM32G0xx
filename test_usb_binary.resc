@@ -1,0 +1,71 @@
+# STM32G0B1 USB firmware test script for BTT SKR Mini E3 v3.0
+# Test grblHAL firmware with USB CDC communication using binary
+
+# Create machine and load USB-enabled platform
+mach create "BTT_SKR_Mini_E3_v30_USB"
+machine LoadPlatformDescription @stm32g0b1_usb_platform.repl
+
+# Load the USB firmware binary at bootloader offset
+sysbus LoadBinary @firmware/firmware_usb_v0.1.2.bin 0x08008000
+
+# Set PC to start of application (after bootloader)
+cpu PC 0x08008000
+
+# Configure analyzers for both USB CDC and UART
+showAnalyzer sysbus.usb_cdc
+showAnalyzer sysbus.usart1
+
+# Set up logging for USB events
+logLevel 3
+
+echo "STM32G0B1 USB firmware loaded:"
+echo "- USB CDC communication on USB peripheral"
+echo "- UART1 available for debug/fallback"
+echo "- Firmware: firmware_usb_v0.1.2.bin"
+
+# Start the simulation
+start
+
+# Wait for USB enumeration and firmware boot
+sleep 3
+
+echo "Testing USB CDC communication..."
+
+# Test grblHAL status command via USB CDC
+echo "Sending grblHAL status command via USB CDC: $$"
+sysbus.usb_cdc WriteChar 0x24  # '$'
+sysbus.usb_cdc WriteChar 0x24  # '$'
+sysbus.usb_cdc WriteChar 0x0A  # newline
+
+sleep 2
+
+# Test grblHAL version command
+echo "Sending grblHAL version command via USB CDC: \$I"
+sysbus.usb_cdc WriteChar 0x24  # '$'
+sysbus.usb_cdc WriteChar 0x49  # 'I'
+sysbus.usb_cdc WriteChar 0x0A  # newline
+
+sleep 2
+
+# Test basic G-code command
+echo "Sending G-code command via USB CDC: G21"
+sysbus.usb_cdc WriteChar 0x47  # 'G'
+sysbus.usb_cdc WriteChar 0x32  # '2'
+sysbus.usb_cdc WriteChar 0x31  # '1'
+sysbus.usb_cdc WriteChar 0x0A  # newline
+
+sleep 2
+
+# Test status query
+echo "Sending status query via USB CDC: ?"
+sysbus.usb_cdc WriteChar 0x3F  # '?'
+sysbus.usb_cdc WriteChar 0x0A  # newline
+
+sleep 2
+
+echo "USB CDC firmware test completed"
+echo "Check USB_CDC_Analyzer window for grblHAL responses"
+echo "Expected responses: grblHAL version info, status, and 'ok' acknowledgments"
+
+# Keep simulation running for interactive testing
+echo "Simulation running - use 'sysbus.usb_cdc WriteChar 0xXX' to send more commands"

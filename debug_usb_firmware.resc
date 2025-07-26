@@ -1,0 +1,83 @@
+:name: USB Firmware Debug
+:description: Debug USB initialization issues
+
+# Create machine
+mach create "USB_Debug"
+machine LoadPlatformDescription @stm32g0b1_usb_platform.repl
+
+# Load USB firmware
+sysbus LoadBinary @firmware/firmware_usb_v0.1.2.bin 0x08008000
+
+# Enable verbose logging
+logLevel 3
+
+# Set up hooks to trace USB initialization
+cpu AddHook 0x08008000 "echo 'HOOK: Firmware entry point reached'"
+cpu AddHook 0x0800FDDC "echo 'HOOK: Reset handler started'"
+
+# Hook common USB functions (addresses would need to be determined from map file)
+cpu AddHook 0x40005C00 "echo 'HOOK: USB peripheral access at 0x40005C00'"
+
+# Hook to catch crashes
+cpu AddHook 0x00000000 "echo 'ERROR: Jump to NULL!'; pause"
+
+# Manually set vector table values
+echo "Setting up vector table..."
+sysbus.cpu SP 0x20024000
+sysbus.cpu PC 0x0800FDDC
+
+# Show initial state
+echo ""
+echo "Initial CPU state:"
+echo "SP = " 
+sysbus.cpu SP
+echo "PC = "
+sysbus.cpu PC
+echo ""
+
+# Start but pause immediately
+echo "Starting emulation (will pause on first instruction)..."
+cpu Step 1
+start
+
+# Check where we are
+echo "After first step:"
+echo "PC = "
+sysbus.cpu PC
+echo "Current instruction:"
+sysbus.cpu Disassemble 1
+
+# Step through several instructions to see initialization
+echo ""
+echo "Stepping through initialization..."
+cpu Step 10
+
+echo "After 10 steps:"
+echo "PC = "
+sysbus.cpu PC
+sysbus.cpu Disassemble 5
+
+# Continue for a bit to see if USB init happens
+echo ""
+echo "Running for 1000 instructions..."
+cpu ExecutionMode SingleStep
+cpu Step 1000
+
+echo "After 1000 instructions:"
+echo "PC = "
+sysbus.cpu PC
+echo "Instructions executed = "
+sysbus.cpu ExecutedInstructions
+
+# Check if we've accessed any USB registers
+echo ""
+echo "Checking peripheral accesses..."
+echo "Note: Monitor log above should show any USB peripheral accesses"
+
+# Keep running to see where it fails
+echo ""
+echo "Continuing execution to find failure point..."
+cpu ExecutionMode Continuous
+start
+
+# This will run until it crashes or we manually stop it

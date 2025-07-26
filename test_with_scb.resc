@@ -1,0 +1,69 @@
+:name: Test with SCB
+:description: Test firmware with System Control Block peripheral
+
+# Create machine
+mach create "grblHAL_SCB"
+machine LoadPlatformDescription @stm32g0b1_btt_skr.repl
+
+# Add System Control Block (SCB) peripheral - needed for VTOR
+python "
+from Antmicro.Renode.Peripherals.Miscellaneous import UnknownPeripheral
+scb = UnknownPeripheral(self.Machine.SystemBus)
+self.Machine.SystemBus.Register(scb, 0xE000ED00, 0x100)
+"
+
+# Load USB firmware
+sysbus LoadBinary @firmware/firmware_usb_v0.1.2.bin 0x08008000
+
+# Read vector table to confirm it's loaded
+echo "Vector table check:"
+echo "SP at 0x08008000:"
+sysbus ReadDoubleWord 0x08008000
+echo "PC at 0x08008004:"  
+sysbus ReadDoubleWord 0x08008004
+
+# Set CPU state from vector table
+$sp = `sysbus ReadDoubleWord 0x08008000`
+$pc = `sysbus ReadDoubleWord 0x08008004`
+
+# Clear thumb bit from PC
+$pc_aligned = `python "print(hex(0x0800FDDC & ~1))"`
+
+echo ""
+echo "Setting CPU state:"
+echo "SP = 0x20024000"
+echo "PC = 0x0800FDDC"
+
+cpu SP 0x20024000
+cpu PC 0x0800FDDC
+
+# Create UART analyzer for debug output
+showAnalyzer sysbus.usb_cdc
+
+# Start emulation
+echo ""
+echo "Starting emulation..."
+start
+
+# Monitor for a bit
+sleep 2
+
+# Check status
+echo ""
+echo "Status check:"
+echo "PC:"
+cpu PC
+echo "Is Halted:"
+cpu IsHalted
+echo "Instructions executed:"
+cpu ExecutedInstructions
+
+# If still running, try to send USB command
+echo ""
+echo "Attempting USB communication..."
+sysbus.usb_cdc WriteChar 0x3F  # '?'
+sysbus.usb_cdc WriteChar 0x0A  # newline
+
+sleep 1
+
+echo "Test complete - check analyzer window"

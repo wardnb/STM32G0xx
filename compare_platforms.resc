@@ -1,0 +1,76 @@
+:name: Compare Platform Performance
+:description: Compare original vs improved platform behavior
+
+echo "=== PLATFORM COMPARISON TEST ==="
+echo ""
+
+# Test 1: Original Platform
+echo "1. Testing ORIGINAL platform..."
+mach create "Original"
+machine LoadPlatformDescription @stm32g0b1_usb_platform.repl
+sysbus LoadBinary @firmware/grblHAL_USB_48MHz_FINAL.bin 0x08008000
+cpu SP 0x20024000
+cpu PC 0x0800FDDC
+
+logLevel 3 # Hide most warnings for cleaner output
+start
+sleep 0.1
+pause
+
+if cpu.PC == 0 then
+  originalInstructions = 0
+  echo "  ❌ CRASHED immediately"
+else
+  originalInstructions = cpu.ExecutedInstructions
+  echo "  ✅ Executed: " + originalInstructions + " instructions"
+end
+
+# Clean up
+machine Clear
+
+echo ""
+
+# Test 2: Improved Platform  
+echo "2. Testing IMPROVED platform..."
+mach create "Improved"
+machine LoadPlatformDescription @stm32g0b1_improved_platform.repl
+sysbus LoadBinary @firmware/grblHAL_USB_48MHz_FINAL.bin 0x08008000
+cpu SP 0x20024000
+cpu PC 0x0800FDDC
+
+logLevel 3 # Hide most warnings
+start
+sleep 0.1
+pause
+
+if cpu.PC == 0 then
+  improvedInstructions = 0
+  echo "  ❌ CRASHED immediately"
+else
+  improvedInstructions = cpu.ExecutedInstructions
+  echo "  ✅ Executed: " + improvedInstructions + " instructions"
+  
+  # Test longer execution
+  start
+  sleep 1
+  pause
+  
+  if cpu.PC == 0 then
+    echo "  ⚠️  Crashed after longer execution"
+  else
+    echo "  🎉 Still running after 1+ seconds!"
+    echo "  Total instructions: " + cpu.ExecutedInstructions
+  end
+end
+
+echo ""
+echo "=== COMPARISON RESULTS ==="
+echo "Original platform: " + originalInstructions + " instructions before crash"
+echo "Improved platform: " + improvedInstructions + " instructions (+ additional runtime)"
+
+if improvedInstructions > originalInstructions then
+  echo "✅ IMPROVEMENT CONFIRMED!"
+  echo "The improved platform fixes memory access issues"
+else
+  echo "❌ No significant improvement detected"
+end

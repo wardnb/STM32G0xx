@@ -1,0 +1,79 @@
+:name: STM32G0xx grblHAL Test
+:description: Tests UART communication and grblHAL commands
+
+# Create machine
+mach create "grblHAL"
+machine LoadPlatformDescription @stm32g0b1_btt_skr.repl
+
+# Load the firmware
+sysbus LoadELF @.pio/build/BTT_SKR_MINI_E3_V30/firmware.elf
+
+# Setup logging
+logLevel 3
+
+# Create UART analyzer
+showAnalyzer usart1
+
+# Test functions
+macro reset
+"""
+    sysbus.cpu MaximumBlockSize 1
+    sysbus.cpu PerformanceInMips 64
+"""
+
+macro sendChar
+"""
+    sysbus.usart1 WriteDoubleWord 0x28 $0
+"""
+
+macro sendCommand
+"""
+    python "for c in '$0': self.ExecuteCommand('sendChar %d' % ord(c))"
+    sendChar 13
+    sendChar 10
+"""
+
+macro testCommands
+"""
+    echo "=== Testing grblHAL Commands ==="
+    
+    # Test status
+    sendCommand "?"
+    
+    # Small delay
+    python "import time; time.sleep(0.5)"
+    
+    # Test help
+    sendCommand "$"
+    
+    python "import time; time.sleep(0.5)"
+    
+    # Test version
+    sendCommand "$I"
+    
+    python "import time; time.sleep(0.5)"
+"""
+
+# Start the test
+echo "Starting STM32G0xx grblHAL test..."
+runMacro $reset
+start
+
+# Let it initialize
+echo "Waiting for initialization..."
+python "import time; time.sleep(2)"
+
+# Run tests
+testCommands
+
+# Monitor for a bit
+echo "Monitoring..."
+python "import time; time.sleep(2)"
+
+# Check state
+echo "CPU PC:"
+sysbus.cpu PC
+echo "Instructions executed:"
+sysbus.cpu ExecutedInstructions
+
+echo "Test complete!"
